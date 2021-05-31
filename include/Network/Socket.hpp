@@ -9,7 +9,7 @@
 #include <netdb.h>
 
 // C headers
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
 #include <errno.h>
 
@@ -19,75 +19,129 @@
 
 #define MAX_DGRAM_SIZE 1000
 
-namespace RDT {
-    
+namespace RDT
+{
+
     class RDT_Components
     {
-        public:
-        static void fillZeroes(std::string& s){
-            if(s.length() > MAX_DGRAM_SIZE) return;
+    public:
+        static void fillZeroes(std::string &s)
+        {
+            if (s.length() > MAX_DGRAM_SIZE)
+                return;
             s.append(MAX_DGRAM_SIZE - s.length(), '0');
         }
+
+        // es sabido que todos los paquetes tienen el tamaño entre el dominio [0,998]
+        static void make_pkt(const std::string &s, char buff[])
+        {
+            short pkt_size = s.length();
+            // subdividimos el tamaño del paquete en dos enteros de tipo "byte"
+            // lbyte son los 8 bits mas significativos, rbyte los 8 bits menos significativos
+            unsigned char lbyte = (pkt_size >> 8), rbyte = static_cast<unsigned char>(pkt_size);
+
+            // no hay problema ya que 998(10) = 0000 0011 1110 0110(2)
+            // y en caso de que pkt_size = 0000 0000 **** ****(2), el primer bloque
+            // sería nulo, lo cual trae problemas a la hora de leer los datos (lee nulo)
+            // entonces simplemente el primer byte es 1111 1111
+            if (lbyte == 0)
+                lbyte = 255;
+
+            buff[0] = lbyte;
+            buff[1] = rbyte;
+
+            // en buff iniciamos desde la posición 2
+            for (int i = 0; i < pkt_size; ++i)
+                buff[i + 2] = s[i];
+
+            // rellenamos de 0's las posiciones restantes, si sobrase espacio
+            for (int i = 2 + pkt_size; i < MAX_DGRAM_SIZE; ++i)
+                buff[i] = '0';
+        }
+
+        // recibiremos un buffer de tamaño MAX_DGRAM_SIZE = 1000
+        static std::string recv_pkt(unsigned char buff[])
+        {
+            int decoded_size = (buff[0] == 255) ? buff[1] : (buff[0] << 8) | buff[1];
+            std::cout << "decoded size: " << decoded_size << "\n";
+
+            std::string received_packet = "";
+
+            for (int i = 2; i < 2 + decoded_size; ++i)
+                received_packet += buff[i];
+
+            return received_packet;
+        }
     };
-    
-    class UdpSocket {
-        public:
-            UdpSocket(const std::string& _IP, const std::string & _Port);
 
-            bool send(const std::string& message);
+    class UdpSocket
+    {
+    public:
+        UdpSocket(const std::string &_IP, const std::string &_Port);
 
-            int secure_send(std::string& message);
+        bool send(const std::string &message);
 
-            std::string receive();
+        int secure_send(char *buf, int *len);
 
-            ~UdpSocket();
+        int receive(std::string &recv_message, std::string &IP_from, uint16_t &Port_from);
 
-        private:
+        // get sockaddr, IPv4 or IPv6:
+        void* get_in_addr(struct sockaddr *sa);
 
-            int socket_file_descriptor;
-            
-            // estas estructuras se usan para la configuración ante el envío de datos
-            struct addrinfo hints, *servinfo, *configured_sockaddr;
+        uint16_t get_in_port(struct sockaddr *sa);
 
-            // esta estructura se usa para el recibo de datos de parte de un emisor
-            struct sockaddr_storage sender_addr;
-            socklen_t sender_addr_len;
+        ~UdpSocket();
 
-            // El IP y puerto de nuestro socket
-            std::string IP;
-            std::string Port;
+    private:
+        int socket_file_descriptor;
+
+        // estas estructuras se usan para la configuración ante el envío de datos
+        struct addrinfo hints, *servinfo, *configured_sockaddr;
+
+        // esta estructura se usa para el recibo de datos de parte de un emisor
+        struct sockaddr_storage sender_addr;
+        socklen_t sender_addr_len;
+
+        // El IP y puerto de nuestro socket
+        std::string IP;
+        std::string Port;
     };
-  
-    UdpSocket::UdpSocket(const std::string & _IP, const std::string & _Port){
+
+    UdpSocket::UdpSocket(const std::string &_IP, const std::string &_Port)
+    {
         IP = _IP;
         Port = _Port;
 
         int rv;
 
         memset(&hints, 0, sizeof hints);
-        hints.ai_family = AF_UNSPEC; // IPv4 or IPv6
+        hints.ai_family = AF_UNSPEC;    // IPv4 or IPv6
         hints.ai_socktype = SOCK_DGRAM; // UDP datagram
-        if(IP.empty())
+        if (IP.empty())
             hints.ai_flags = AI_PASSIVE; // uso mi propia IP, esto es para el caso del servidor
-
 
         // en caso de que no se envíe ninguna IP, eso significa que el socket se ubicará en el
         // lado del servidor
-        if ((rv = getaddrinfo(IP.empty()? NULL : IP.c_str(), Port.c_str(), &hints, &servinfo)) != 0) {
+        if ((rv = getaddrinfo(IP.empty() ? NULL : IP.c_str(), Port.c_str(), &hints, &servinfo)) != 0)
+        {
             fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
             return;
         }
 
         // loop through all the results and make a socket
-        for(configured_sockaddr = servinfo; configured_sockaddr != NULL; configured_sockaddr = configured_sockaddr->ai_next) {
-            if ((socket_file_descriptor = socket(configured_sockaddr->ai_family, configured_sockaddr->ai_socktype, configured_sockaddr->ai_protocol)) == -1) {
+        for (configured_sockaddr = servinfo; configured_sockaddr != NULL; configured_sockaddr = configured_sockaddr->ai_next)
+        {
+            if ((socket_file_descriptor = socket(configured_sockaddr->ai_family, configured_sockaddr->ai_socktype, configured_sockaddr->ai_protocol)) == -1)
+            {
                 perror("talker: socket");
                 continue;
             }
 
             // indicamos que es un socket pasivo, osea el del servidor
-            if(IP.empty()){
-                if (bind(socket_file_descriptor, configured_sockaddr->ai_addr, configured_sockaddr->ai_addrlen) == -1) {
+            if (IP.empty())
+            {
+                if (bind(socket_file_descriptor, configured_sockaddr->ai_addr, configured_sockaddr->ai_addrlen) == -1)
+                {
                     close(socket_file_descriptor);
                     perror("listener: bind");
                     continue;
@@ -98,11 +152,11 @@ namespace RDT {
         }
 
         // fallamos al crear el socket
-        if (configured_sockaddr == NULL) {
+        if (configured_sockaddr == NULL)
+        {
             fprintf(stderr, "talker: failed to create socket\n");
             return;
         }
-
     }
 
     UdpSocket::~UdpSocket()
@@ -112,69 +166,90 @@ namespace RDT {
         close(socket_file_descriptor);
     }
 
-    bool UdpSocket::send(const std::string& message)
+    bool UdpSocket::send(const std::string &message)
     {
-        int chunk_size = MAX_DGRAM_SIZE;
-        std::string message_2send = message;
+        char buffer[MAX_DGRAM_SIZE];
 
-        RDT_Components::fillZeroes(message_2send);
+        RDT_Components::make_pkt(message, buffer);
 
-        if(!secure_send(message_2send)) return true;
+        int len = MAX_DGRAM_SIZE;
+        if (secure_send(buffer, &len) == -1)
+        {
+            perror("secure_send");
+            std::cout << "solo se pudo enviar " << len << " bytes de información\n";
+        }
 
         return false;
     }
 
     // el mensaje siempre tiene tamaño de MAX_DGRAM_SIZE
-    int UdpSocket::secure_send(std::string& message) {
-        int bytes_sent = 0, chunk_size = MAX_DGRAM_SIZE;
-        
-        do{
-            chunk_size -= bytes_sent;
-            message = message.substr(bytes_sent, chunk_size);
+    int UdpSocket::secure_send(char *buf, int *len)
+    {
+        int total = 0, bytes_left = *len, n;
 
-            bytes_sent = sendto(socket_file_descriptor, message.c_str(), chunk_size, 0, 
-                          configured_sockaddr->ai_addr, configured_sockaddr->ai_addrlen);
-            
-            if (bytes_sent < 0)
-            {    
-                perror("talker: sendto");
-                return -1; // retornamos -1 como error
-            }
-        } while(bytes_sent < chunk_size);
-        
-        return 0; // retornamso 0 como éxito al enviar
+        while (total < *len)
+        {
+            n = sendto(socket_file_descriptor, buf + total, bytes_left, 0,
+                       configured_sockaddr->ai_addr, configured_sockaddr->ai_addrlen);
+            if (n == -1)
+                break;
+            total += n;
+            bytes_left -= n;
+        }
+
+        *len = total;
+
+        return (n == -1) ? -1 : 0; // retornamos 0 como éxito al enviar, -1 como falla
     }
 
-
-    std::string UdpSocket::receive()
+    int UdpSocket::receive(std::string &recv_message, std::string &IP_from, uint16_t &Port_from)
     {
-        std::string recv_message = ""; // received message
-        char buffer[MAX_DGRAM_SIZE + 1];
+        unsigned char buffer[MAX_DGRAM_SIZE + 1];
 
-        int bytes_received = 0, chunk_size = MAX_DGRAM_SIZE;
-        do{
-            bytes_received = recvfrom(socket_file_descriptor, buffer, chunk_size, 0,
-                                      (struct sockaddr *)&sender_addr, &sender_addr_len);
+        int n;
+        n = recvfrom(socket_file_descriptor, buffer, MAX_DGRAM_SIZE, 0,
+                     (struct sockaddr *)&sender_addr, &sender_addr_len);
 
-            buffer[bytes_received] = '\0';
+        if (n == -1)
+        {
+            perror("receive");
+            std::cout << "error al leer los datos\n";
+        }
 
-            if(bytes_received < 0)
-            {
-                perror("recvfrom");
-                return "-1"; // error string
-            }
+        buffer[n] = '\0';
 
-            recv_message += buffer;
+        char addr_from[INET_ADDRSTRLEN];
 
-            chunk_size -= bytes_received;
+        inet_ntop(sender_addr.ss_family, get_in_addr((struct sockaddr *)&sender_addr),
+                  addr_from, sizeof(addr_from));
 
-        } while(chunk_size > 0); // mientras todavía  tengamos algo que leer
+        IP_from = addr_from;
+        Port_from = get_in_port((struct sockaddr *)&sender_addr);
 
+        recv_message = RDT_Components::recv_pkt(buffer);
+        return n; // 0: success, -1: failure
+    }
 
-        return recv_message; // return received message on success
+    // get sockaddr, IPv4 or IPv6:
+    void* UdpSocket::get_in_addr(struct sockaddr *sa)
+    {
+        if (sa->sa_family == AF_INET)
+        {
+            return &(((struct sockaddr_in *)sa)->sin_addr);
+        }
+        return &(((struct sockaddr_in6 *)sa)->sin6_addr);
+    }
+
+    // get sockport, IPv4 or IPv6:
+    uint16_t UdpSocket::get_in_port(struct sockaddr *sa)
+    {
+        if (sa->sa_family == AF_INET)
+        {
+            return ((struct sockaddr_in *)sa)->sin_port;
+        }
+        return ((struct sockaddr_in6 *)sa)->sin6_port;
     }
 
 }
 
-
-#endif//UDP_SOCKET_HPP_
+#endif //UDP_SOCKET_HPP_

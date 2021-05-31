@@ -9,18 +9,15 @@
 namespace tool
 {
 
-  const std::string fixToBytes(const std::string &input, const std::size_t& n_bytes)
-  {
-    if(input.length() > n_bytes)
-    {
+  const std::string fixToBytes(const std::string &input, const std::size_t& n_bytes) {
+    if(input.length() > n_bytes) {
       ConsolePrint("[Error]: The given string is longer than the given number of bytes.", RED);
       exit(EXIT_FAILURE);
     }
     return std::string().assign(n_bytes - input.length(), '0') + input;
   }
   
-  const std::string asStreamString(std::string &source, const std::size_t& h_bytes)
-  {
+  const std::string asStreamString(std::string &source, const std::size_t& h_bytes) {
     std::string tempSrc = source, contentSizeStr = source.substr(0, h_bytes);
     for(auto& digit : contentSizeStr)
       if(!isdigit(digit))
@@ -30,8 +27,7 @@ namespace tool
     return tempSrc.substr(h_bytes, cSize);
   }
 
-  const std::size_t asStreamNumeric(std::string &source, const std::size_t& h_bytes)
-  {
+  const std::size_t asStreamNumeric(std::string &source, const std::size_t& h_bytes) {
     std::string tempSrc = source, contentSizeStr = source.substr(0, h_bytes);
     for(auto& digit : contentSizeStr)
       if(!isdigit(digit))

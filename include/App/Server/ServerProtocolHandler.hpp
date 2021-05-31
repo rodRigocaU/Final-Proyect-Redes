@@ -6,7 +6,7 @@
 namespace app
 {
 
-  class MainServerApp{
+  class MainServerApp {
     
   };
 

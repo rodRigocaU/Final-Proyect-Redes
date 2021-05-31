@@ -79,20 +79,21 @@ namespace trlt
     return packet;
   }
 
-  struct ReadNodePacket
-  {
-    enum Class{Leaf, Internal, None};
-    enum BooleanOperator{And, Or, None};
-    enum QueryMode{Required, NotRequired, None};
-    enum SqlOperator{Equal, LessThan, MoreThan, Like, None};
+  struct ReadNodePacket {
+    enum Class{Leaf, Internal, NoneClass};
+    enum BooleanOperator{And, Or, NoneBO};
+    enum QueryMode{Required, NotRequired, NoneQM};
+    enum SqlOperator{Equal, LessThan, MoreThan, Like, NoneSQL};
 
-    static std::unordered_map<SqlOperator, std::string> operators;
+    const std::unordered_map<SqlOperator, std::string> sqlOperators  = {{SqlOperator::Equal, "="},
+                                                                        {SqlOperator::LessThan, "<"},
+                                                                        {SqlOperator::MoreThan, ">"},
+                                                                        {SqlOperator::Like, "like"}};
 
-    struct Feature
-    {
+    struct Feature {
       std::string attrName, attrValue;
-      SqlOperator sqlOpId = SqlOperator::None;
-      BooleanOperator boolOpId = BooleanOperator::None;
+      SqlOperator sqlOpId = SqlOperator::NoneSQL;
+      BooleanOperator boolOpId = BooleanOperator::NoneBO;
     };
 
     std::string nodeId;
@@ -102,27 +103,21 @@ namespace trlt
 
     std::vector<Feature> features;
 
-    ReadNodePacket(){
-      if(operators.size() == 0){
-        operators[SqlOperator::Equal] = "=";
-        operators[SqlOperator::LessThan] = "<";
-        operators[SqlOperator::MoreThan] = ">";
-        operators[SqlOperator::Like] = "like";
-      }
+    ReadNodePacket() {
+      clear();
     }
     
-    void clear(){
+    void clear() {
       nodeId = "";
-      attribsReq = QueryMode::None;
-      nodeType = Class::None;
+      attribsReq = QueryMode::NoneQM;
+      nodeType = Class::NoneClass;
       features.clear();
     }
   };
 
-  ReadNodePacket& operator<<(ReadNodePacket& packet, const std::string& message)
-  {
+  ReadNodePacket& operator<<(ReadNodePacket& packet, const std::string& message) {
     packet.clear();
-    if(message.length() && message[0] != 'r'){
+    if(message.length() && message[0] != 'r') {
       tool::ConsolePrint("[Error]: Incorrect key header.", RED);
       exit(EXIT_FAILURE);
     }
@@ -132,7 +127,7 @@ namespace trlt
     packet.nodeType = static_cast<ReadNodePacket::Class>(tool::asStreamNumeric(content, 1));
     packet.attribsReq = static_cast<ReadNodePacket::QueryMode>(tool::asStreamNumeric(content, 1));
     std::size_t nFeatures = tool::asStreamNumeric(content, 2);
-    while(nFeatures-- != 0){
+    while(nFeatures-- != 0) {
       ReadNodePacket::Feature feature;
       feature.attrName = tool::asStreamString(content, 3);
       feature.sqlOpId = static_cast<ReadNodePacket::SqlOperator>(tool::asStreamNumeric(content, 1));
@@ -143,8 +138,7 @@ namespace trlt
     return packet;
   }
 
-  ReadNodePacket& operator>>(ReadNodePacket& packet, std::string& message)
-  {
+  ReadNodePacket& operator>>(ReadNodePacket& packet, std::string& message) {
     message.clear();
     message += "r";
     std::string nameSize = std::to_string(packet.nodeId.length());
@@ -165,8 +159,7 @@ namespace trlt
     return packet;
   }
 
-  struct UpdateNodePacket
-  {
+  struct UpdateNodePacket {
     enum Mode{Object, Attribute, None};
 
     Mode updateMode;
@@ -178,8 +171,7 @@ namespace trlt
     }
   };
 
-  UpdateNodePacket& operator<<(UpdateNodePacket& packet, const std::string& message)
-  {
+  UpdateNodePacket& operator<<(UpdateNodePacket& packet, const std::string& message) {
     packet.clear();
     if(message.length() && message[0] != 'u'){
       tool::ConsolePrint("[Error]: Incorrect key header.", RED);
@@ -194,8 +186,7 @@ namespace trlt
     return packet;
   }
 
-  UpdateNodePacket& operator>>(UpdateNodePacket& packet, std::string& message)
-  {
+  UpdateNodePacket& operator>>(UpdateNodePacket& packet, std::string& message) {
     message.clear();
     message += "u";
     message += std::to_string(packet.updateMode);
@@ -210,24 +201,21 @@ namespace trlt
     return packet;
   }
 
-  struct DeleteNodePacket
-  {
+  struct DeleteNodePacket {
     enum Mode{Object, Attribute, Relation, None};
 
     Mode deleteMode;
     std::string nodeId, targetName, targetValue;
 
-    void clear(){
+    void clear() {
       nodeId = targetName = targetValue = "";
       deleteMode = Mode::None;
     }
   };
 
-  DeleteNodePacket& operator<<(DeleteNodePacket& packet, const std::string& message)
-  {
+  DeleteNodePacket& operator<<(DeleteNodePacket& packet, const std::string& message) {
     packet.clear();
-    if(message.length() && message[0] != 'd')
-    {
+    if(message.length() && message[0] != 'd') {
       tool::ConsolePrint("[Error]: Incorrect key header.", RED);
       exit(EXIT_FAILURE);
     }
@@ -239,8 +227,7 @@ namespace trlt
     return packet;
   }
 
-  DeleteNodePacket& operator>>(DeleteNodePacket& packet, std::string& message)
-  {
+  DeleteNodePacket& operator>>(DeleteNodePacket& packet, std::string& message) {
     message.clear();
     message += "d";
     message += std::to_string(packet.deleteMode);
@@ -251,7 +238,6 @@ namespace trlt
     message += packet.targetValue;
     return packet;
   }
-
 }
 
 #endif//CLIENT_0_MAIN_SERVER_PARSER_HPP_
