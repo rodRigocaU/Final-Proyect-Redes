@@ -3,7 +3,7 @@
 
 int main(int argc, char *argv[])
 {    
-  app::Client clientInstance("34.94.147.12", "8080");
+  app::Client clientInstance("34.94.147.12", "8000");
   if(argc > 1)
   {
     if(!clientInstance.setCommand(argv[1]))

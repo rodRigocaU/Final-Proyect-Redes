@@ -12,6 +12,12 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
 project(Cenapse)#Means: "Synapse", but Azure took this name first :,(
 
+find_package (sqlite3)
+if (SQLITE3_FOUND)
+  include_directories(${SQLITE3_INCLUDE_DIRS})
+  target_link_libraries (${PROJECT_NAME} ${SQLITE3_LIBRARIES})
+endif (SQLITE3_FOUND)
+
 include_directories(include)
 
 add_executable(CenapseClient src/Client.cpp)

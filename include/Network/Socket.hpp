@@ -25,49 +25,42 @@ namespace RDT
     class RDT_Components
     {
     public:
-        static void fillZeroes(std::string &s)
-        {
-            if (s.length() > MAX_DGRAM_SIZE)
-                return;
-            s.append(MAX_DGRAM_SIZE - s.length(), '0');
-        }
-
         // es sabido que todos los paquetes tienen el tamaño entre el dominio [0,998]
         static void make_pkt(const std::string &s, char buff[])
         {
-            short pkt_size = s.length();
+            uint16_t pkt_size = s.length();
             // subdividimos el tamaño del paquete en dos enteros de tipo "byte"
             // lbyte son los 8 bits mas significativos, rbyte los 8 bits menos significativos
-            unsigned char lbyte = (pkt_size >> 8), rbyte = static_cast<unsigned char>(pkt_size);
+            u_char lbyte = (pkt_size >> 8), rbyte = static_cast<u_char>(pkt_size);
 
             // no hay problema ya que 998(10) = 0000 0011 1110 0110(2)
             // y en caso de que pkt_size = 0000 0000 **** ****(2), el primer bloque
             // sería nulo, lo cual trae problemas a la hora de leer los datos (lee nulo)
             // entonces simplemente el primer byte es 1111 1111
-            if (lbyte == 0)
-                lbyte = 255;
+            if (lbyte == 0) lbyte = 255;
 
             buff[0] = lbyte;
             buff[1] = rbyte;
 
             // en buff iniciamos desde la posición 2
-            for (int i = 0; i < pkt_size; ++i)
+            for (uint16_t i = 0; i < pkt_size; ++i)
                 buff[i + 2] = s[i];
 
             // rellenamos de 0's las posiciones restantes, si sobrase espacio
-            for (int i = 2 + pkt_size; i < MAX_DGRAM_SIZE; ++i)
+            for (uint16_t i = 2 + pkt_size; i < MAX_DGRAM_SIZE; ++i)
                 buff[i] = '0';
         }
 
         // recibiremos un buffer de tamaño MAX_DGRAM_SIZE = 1000
-        static std::string recv_pkt(unsigned char buff[])
+        static std::string recv_pkt(u_char buff[])
         {
-            int decoded_size = (buff[0] == 255) ? buff[1] : (buff[0] << 8) | buff[1];
+            int decoded_size = 0;
+            decoded_size = (buff[0] == 255) ? buff[1] : (buff[0] << 8) | buff[1];
             std::cout << "decoded size: " << decoded_size << "\n";
 
             std::string received_packet = "";
 
-            for (int i = 2; i < 2 + decoded_size; ++i)
+            for (uint16_t i = 2; i < 2 + decoded_size; ++i)
                 received_packet += buff[i];
 
             return received_packet;
@@ -204,7 +197,7 @@ namespace RDT
 
     int UdpSocket::receive(std::string &recv_message, std::string &IP_from, uint16_t &Port_from)
     {
-        unsigned char buffer[MAX_DGRAM_SIZE + 1];
+        u_char buffer[MAX_DGRAM_SIZE + 1];
 
         int n;
         n = recvfrom(socket_file_descriptor, buffer, MAX_DGRAM_SIZE, 0,

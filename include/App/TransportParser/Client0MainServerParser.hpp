@@ -8,12 +8,12 @@
 
 #include "../Tools/Fixer.hpp"
 #include "../Tools/Colors.hpp"
+#include "../Tools/InterfacePerformance.hpp"
 
 namespace trlt
 {
 
-  struct CreateNodePacket
-  {
+  struct CreateNodePacket {
     std::string nodeId;
     std::map<std::string, std::string> attributes;
     std::vector<std::string> relations;
@@ -79,6 +79,30 @@ namespace trlt
     return packet;
   }
 
+  CreateNodePacket& operator<<(CreateNodePacket& packet, std::map<std::string, std::string>& settings){
+    packet.clear();
+    packet.nodeId = settings["Node_Name"];
+    std::stringstream attributeGroup, relationGroup, buffer;
+    attributeGroup << settings["Attributes"];
+    relationGroup << settings["Relations"];
+    std::string singleAttribute, singleRelation;
+    while(std::getline(attributeGroup, singleAttribute, ',')){
+      std::string key, value;
+      buffer << singleAttribute;
+      std::getline(buffer, key, '|');
+      std::getline(buffer, value);
+      tool::cleanSpaces(key);
+      tool::cleanSpaces(value);
+      packet.attributes.insert({key, value});
+      buffer.clear();
+    }
+    while(std::getline(relationGroup, singleRelation, ',')){
+      tool::cleanSpaces(singleRelation);
+      packet.relations.push_back(singleRelation);
+    }
+    return packet;
+  }
+
   struct ReadNodePacket {
     enum Class{Leaf, Internal, NoneClass};
     enum BooleanOperator{And, Or, NoneBO};
@@ -89,22 +113,39 @@ namespace trlt
                                                                         {SqlOperator::LessThan, "<"},
                                                                         {SqlOperator::MoreThan, ">"},
                                                                         {SqlOperator::Like, "like"}};
+    const std::unordered_map<std::string, SqlOperator> sqlMeanings   = {{"=", SqlOperator::Equal},
+                                                                        {"<", SqlOperator::LessThan},
+                                                                        {">", SqlOperator::MoreThan},
+                                                                        {"like", SqlOperator::Like}};
 
     struct Feature {
       std::string attrName, attrValue;
       SqlOperator sqlOpId = SqlOperator::NoneSQL;
       BooleanOperator boolOpId = BooleanOperator::NoneBO;
+
+      void reset(){
+        attrName = attrValue = "";
+        sqlOpId = SqlOperator::NoneSQL;
+        boolOpId = BooleanOperator::NoneBO;
+      }
     };
 
     std::string nodeId;
     uint8_t depth;
     Class nodeType;
     QueryMode attribsReq;
-
     std::vector<Feature> features;
 
     ReadNodePacket() {
       clear();
+    }
+
+    BooleanOperator toBooleanEnum(const std::string& boolOp){
+      if(boolOp == "and")
+        return BooleanOperator::And;
+      else if(boolOp == "or")
+        return BooleanOperator::Or;
+      return BooleanOperator::NoneBO;
     }
     
     void clear() {
@@ -149,13 +190,66 @@ namespace trlt
     message += std::to_string(packet.attribsReq);
     message += tool::fixToBytes(std::to_string(packet.features.size()), 2);
     for(auto& feature : packet.features){
-      message += std::to_string(feature.attrName.length());
+      message += tool::fixToBytes(std::to_string(feature.attrName.length()), 3);
       message += feature.attrName;
       message += std::to_string(feature.sqlOpId);
-      message += std::to_string(feature.attrValue.length());
+      message += tool::fixToBytes(std::to_string(feature.attrValue.length()), 3);
       message += feature.attrValue;
       message += std::to_string(feature.boolOpId);
     }
+    return packet;
+  }
+
+  ReadNodePacket& operator<<(ReadNodePacket& packet, std::map<std::string, std::string>& settings){
+    packet.clear();
+    packet.nodeId = settings["Node_Name"];
+    packet.depth = std::stoi(settings["Depth"]);
+    std::string readType = settings["Leaf"];
+    if(readType == "on")
+      packet.depth = ReadNodePacket::Class::Leaf;
+    else if(readType == "off")
+      packet.depth = ReadNodePacket::Class::Internal;
+    else
+      packet.depth = ReadNodePacket::Class::NoneClass;
+
+    std::string requirements = settings["Attributes_Required"];
+
+    if(requirements == "on")
+      packet.attribsReq = ReadNodePacket::QueryMode::Required;
+    else if(requirements == "off")
+      packet.attribsReq = ReadNodePacket::QueryMode::NotRequired;
+    else
+      packet.attribsReq = ReadNodePacket::QueryMode::NoneQM;
+    std::string rawFeatureComponent;
+    std::stringstream featureGroup;
+    featureGroup << settings["Query_Features"];
+    ReadNodePacket::Feature singleFeature;
+    uint8_t state = 0;
+    std::cout << "xd\n";
+    while(std::getline(featureGroup, rawFeatureComponent, '|')){
+      tool::cleanSpaces(rawFeatureComponent);
+      std::cout << rawFeatureComponent << std::endl;
+      if(state == 0){
+        singleFeature.attrName = rawFeatureComponent;
+      }
+      else if(state == 1){
+        singleFeature.sqlOpId = packet.sqlMeanings.find(rawFeatureComponent)->second;
+      }
+      else if(state == 2){
+        singleFeature.attrValue = rawFeatureComponent;
+      }
+      else{
+        singleFeature.boolOpId = packet.toBooleanEnum(rawFeatureComponent);
+        packet.features.push_back(singleFeature);
+        singleFeature.reset();
+        state = 0;
+        continue;
+      }
+      ++state;
+    }
+    if(state != 0)
+      packet.features.push_back(singleFeature);
+    std::cout << state << std::endl;
     return packet;
   }
 
@@ -201,6 +295,12 @@ namespace trlt
     return packet;
   }
 
+  UpdateNodePacket& operator<<(UpdateNodePacket& packet, std::map<std::string, std::string>& settings){
+    packet.clear();
+    packet.nodeId = settings["Node_Name"];
+    return packet;
+  }
+
   struct DeleteNodePacket {
     enum Mode{Object, Attribute, Relation, None};
 
@@ -236,6 +336,12 @@ namespace trlt
     message += packet.targetName;
     message += tool::fixToBytes(std::to_string(packet.targetValue.length()), 3);
     message += packet.targetValue;
+    return packet;
+  }
+
+  DeleteNodePacket& operator<<(DeleteNodePacket& packet, std::map<std::string, std::string>& settings){
+    packet.clear();
+    packet.nodeId = settings["Node_Name"];
     return packet;
   }
 }
