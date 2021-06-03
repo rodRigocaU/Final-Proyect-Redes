@@ -298,6 +298,23 @@ namespace trlt
   UpdateNodePacket& operator<<(UpdateNodePacket& packet, std::map<std::string, std::string>& settings){
     packet.clear();
     packet.nodeId = settings["Node_Name"];
+    std::string updateType = settings["Mode"];
+    if(updateType == "node")
+      packet.updateMode = UpdateNodePacket::Mode::Object;
+    else if(updateType == "attribute")
+      packet.updateMode = UpdateNodePacket::Mode::Attribute;
+    else
+      packet.updateMode = UpdateNodePacket::Mode::None;
+    packet.newNodeValue = settings["Node_Value"];
+    std::stringstream attributeGroup;
+    attributeGroup << settings["Attribute"];
+    std::string nameAttr, valAttr;
+    std::getline(attributeGroup, nameAttr, '|');
+    std::getline(attributeGroup, valAttr);
+    tool::cleanSpaces(nameAttr);
+    tool::cleanSpaces(valAttr);
+    packet.attrName = nameAttr;
+    packet.attrValue = valAttr;
     return packet;
   }
 
@@ -305,10 +322,10 @@ namespace trlt
     enum Mode{Object, Attribute, Relation, None};
 
     Mode deleteMode;
-    std::string nodeId, targetName, targetValue;
+    std::string nodeId, targetName;
 
     void clear() {
-      nodeId = targetName = targetValue = "";
+      nodeId = targetName = "";
       deleteMode = Mode::None;
     }
   };
@@ -323,7 +340,6 @@ namespace trlt
     packet.deleteMode = static_cast<DeleteNodePacket::Mode>(tool::asStreamNumeric(content, 1));
     packet.nodeId = tool::asStreamString(content, 2);
     packet.targetName = tool::asStreamString(content, 3);
-    packet.targetValue = tool::asStreamString(content, 3);
     return packet;
   }
 
@@ -334,14 +350,22 @@ namespace trlt
     message += tool::fixToBytes(std::to_string(packet.nodeId.length()), 2);
     message += tool::fixToBytes(std::to_string(packet.targetName.length()), 3);
     message += packet.targetName;
-    message += tool::fixToBytes(std::to_string(packet.targetValue.length()), 3);
-    message += packet.targetValue;
     return packet;
   }
 
   DeleteNodePacket& operator<<(DeleteNodePacket& packet, std::map<std::string, std::string>& settings){
     packet.clear();
     packet.nodeId = settings["Node_Name"];
+    std::string dropType = settings["Mode"];
+    if(dropType == "node")
+      packet.deleteMode = DeleteNodePacket::Mode::Object;
+    else if(dropType == "attribute")
+      packet.deleteMode = DeleteNodePacket::Mode::Attribute;
+    else if(dropType == "relation")
+      packet.deleteMode = DeleteNodePacket::Mode::Relation;
+    else
+      packet.deleteMode = DeleteNodePacket::Mode::None;
+    packet.targetName = settings["Attribute/Relation"];
     return packet;
   }
 }
