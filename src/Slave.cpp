@@ -1,29 +1,41 @@
 #include "Network/Socket.hpp"
-// #include "database/Sqlite.hpp"
+#include "App/TransportParser/Client0MainServerParser.hpp"
+#include "database/Sqlite.hpp"
 
 #define PORT 8000
 
-int main(){
+int main()
+{
   RDT::UdpSocket slaveServerSocket("", "8000");
   std::string received_comand, IP_from;
   uint16_t Port_from;
 
+  database::SQLite BD;
+  BD.createTables();
+  
   slaveServerSocket.receive(received_comand, IP_from, Port_from);
-  //NOMBRE DE NODO
-  //ATRIBUTOS 
-  //RELACIONES
-  // el comando de creación se guardará en el string received_comand
+  std::cout << received_comand << " " << IP_from << " " << Port_from << '\n';
 
-  // database::SQLite BD;
-  // BD.createTables();
+  std::string name_nodo;
+  std::vector<std::pair<std::string, std::string>> attributes;
+
+  trlt::CreateNodePacket c;
+  c << received_comand;
+  std::cout << c.nodeId << '\n';
+
+  for (auto atr : c.attributes)
+  {
+    attributes.push_back(atr);
+  }
+
+
+  BD.Create(c.nodeId,attributes,c.relations);
+
+  // Impresion
+  BD.printSelectNodos();
+  BD.printSelectAttributes();
+  BD.printSelectRelations();
+
 
   
-  // string name_nodo;
-  // vector<pair<string,string> >attributes;
-  // vector<string> nodes_relations;
-  
-  
-  // BD.Create(name_nodo,attributes,nodes_relations);
-
-  return 0;
 }
