@@ -1,43 +1,14 @@
-#ifndef CLIENT_PROTOCOL_HANDLER_HPP_
-#define CLIENT_PROTOCOL_HANDLER_HPP_
+#include "App/Client/ClientInterface.hpp"
 
-#include <iostream>
-#include <functional>
-#include <memory>
-#include <string>
-#include <sstream>
-#include <vector>
-#include <unordered_map>
-#include "App/Tools/Colors.hpp"
-#include "App/Tools/Fixer.hpp"
-#include "App/Tools/InterfacePerformance.hpp"
-#include "App/TransportParser/Client0MainServerParser.hpp"
-#include "Network/Socket.hpp"
+using namespace app;
 
-namespace app {
-
-  class Client {
-  private:
-    std::unordered_map<std::string, std::function<bool(void)>> commands;
-
-    bool create();
-    bool read();
-    bool update();
-    bool drop();
-    
-    std::unique_ptr<RDT::UdpSocket> remoteSocket;
-  public:
-  Client(const std::string& serverIp, const std::string& serverPort);
-  bool setCommand(const std::string& command);
-  };
-
-  Client::Client(const std::string& serverIp, const std::string& serverPort) {
+Client::Client(const std::string& serverIp, const std::string& serverPort) {
     commands["spawn"]  = std::bind(&Client::create, this);
     commands["ask"]    = std::bind(&Client::read, this);
     commands["update"] = std::bind(&Client::update, this);
     commands["drop"]   = std::bind(&Client::drop, this);
 
-    remoteSocket = std::make_unique<RDT::UdpSocket>(serverIp, serverPort);
+    remoteSocket = std::make_unique<net::UdpSocket>(serverIp, serverPort);
   }
 
   bool Client::setCommand(const std::string& command) {
@@ -117,6 +88,3 @@ namespace app {
     remoteSocket->send(message);
     return true;
   }
-}
-
-#endif //CLIENT_PROTOCOL_HANDLER_HPP_

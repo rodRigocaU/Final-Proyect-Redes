@@ -1,4 +1,4 @@
-#include "Network/Socket.hpp"
+#include "Network/UdpSocket.hpp"
 #include "App/TransportParser/Client0MainServerParser.hpp"
 #include "database/Sqlite.hpp"
 
@@ -6,11 +6,11 @@
 
 int main()
 {
-  RDT::UdpSocket slaveServerSocket("", "8000");
+  net::UdpSocket slaveServerSocket("", "8000");
   std::string received_comand, IP_from;
   uint16_t Port_from;
 
-  database::SQLite BD;
+  db::SQLite BD;
   BD.createTables();
   
   slaveServerSocket.receive(received_comand, IP_from, Port_from);
@@ -19,7 +19,7 @@ int main()
   std::string name_nodo;
   std::vector<std::pair<std::string, std::string>> attributes;
 
-  trlt::CreateNodePacket c;
+  msg::CreateNodePacket c;
   c << received_comand;
   std::cout << c.nodeId << '\n';
 
@@ -30,8 +30,6 @@ int main()
 
 
   BD.Create(c.nodeId,attributes,c.relations);
-
-  // Impresion
   BD.printSelectNodos();
   BD.printSelectAttributes();
   BD.printSelectRelations();
