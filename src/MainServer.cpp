@@ -3,6 +3,7 @@
 int main(){
   RDT::UdpSocket mainServerListener("", "8000");
   RDT::UdpSocket slaveServerSocket("35.188.208.43", "8000");
+  // RDT::UdpSocket slaveServerSocket("127.0.0.1", "9000");
   std::string received_message, IP_from;
   uint16_t Port_from;
   // recibes el mensaje desde el cliente

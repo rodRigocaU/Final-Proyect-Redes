@@ -85,6 +85,7 @@ namespace database
         return 0;
     }
 
+
     class SQLite
     {
     private:
@@ -160,7 +161,6 @@ namespace database
               "Nodo_name_start CHAR(255) NOT NULL,"
               "Nodo_name_end CHAR(255) NOT NULL);";
 
-        // rc = sqlite3_exec(DB, sql.c_str(), callback, 0, &MsgError);
         rc = sqlite3_exec(DB, sql.c_str(), NULL, 0, &MsgError);
 
         if (printError)
