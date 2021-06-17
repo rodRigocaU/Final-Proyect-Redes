@@ -115,7 +115,7 @@ std::string crypto::sha256(const std::string& inputMsg){
   std::vector<uint8_t> paddInput = sha256Padding(inputMsg);
   uint32_t h0 = initHashVars[0], h1 = initHashVars[1], h2 = initHashVars[2], h3 = initHashVars[3];
   uint32_t h4 = initHashVars[4], h5 = initHashVars[5], h6 = initHashVars[6], h7 = initHashVars[7];
-  for(uint8_t chunk = 0; chunk < paddInput.size(); chunk += 64){
+  for(uint64_t chunk = 0; chunk < paddInput.size(); chunk += 64){
     std::vector<uint8_t> byteChunk(paddInput.begin() + chunk, paddInput.begin() + chunk + 64);
     std::array<uint32_t, 64> W = makeMessageSchedule(byteChunk);
     uint32_t A = h0, B = h1, C = h2, D = h3;
