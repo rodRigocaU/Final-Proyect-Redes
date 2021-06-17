@@ -159,6 +159,7 @@ namespace RDT
     class UdpSocket
     {
     private:
+
         // Network attributes
         int socket_file_descriptor;
         // estas estructuras se usan para la configuración ante el envío de datos
@@ -195,6 +196,8 @@ namespace RDT
 
         ~UdpSocket();
     };
+
+
 
     UdpSocket::UdpSocket(const std::string &_IP, const std::string &_Port)
     {
@@ -247,17 +250,21 @@ namespace RDT
             return;
         }
 
-        // liberamos la memoria de la lista
-        freeaddrinfo(servinfo);
+       
 
         // configuramos nuestro timer una vez ha sido creado el socket
         ufds[0].fd = socket_file_descriptor;
         ufds[0].events = POLLIN; // para lectura de mensajes
 
+        if(IP.empty())
+            freeaddrinfo(servinfo);
     }
 
     UdpSocket::~UdpSocket()
     {
+        // liberamos la memoria de la lista de resultados
+        freeaddrinfo(servinfo);
+        
         // cerramos nuestro sockets
         close(socket_file_descriptor);
     }

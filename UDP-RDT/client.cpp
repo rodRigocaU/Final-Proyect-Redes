@@ -1,5 +1,6 @@
 #include "UDP_RDT_SOCKET.hpp"
 // #include "UDP_SOCKET.hpp"
+// #include "SOCKET.hpp"
 
 using namespace std;
 
@@ -16,10 +17,18 @@ int main() {
 		text_msg += std::to_string(i);
 	}
 	cout << "tamaño del mensaje: " << text_msg.size() << endl;
+	
+	
+	u_char message[MAX_DGRAM_SIZE];
+	for(int i = 0; i < MAX_DGRAM_SIZE; ++i)
+	{
+		message[i] = text_msg[i];
+	}
 
+	int bytes_sent = 0;	
 	for(int i = 0; i < 5; ++i) {
 		//cout << "mensaje enviado: " << text_msg << endl;
-		client_socket.send(text_msg);
+		std::cout << client_socket.send(text_msg) << std::endl;
 	}
 
 
