@@ -8,7 +8,8 @@ Client::Client(const std::string& serverIp, const std::string& serverPort) {
     commands["update"] = std::bind(&Client::update, this);
     commands["drop"]   = std::bind(&Client::drop, this);
 
-    remoteSocket = std::make_unique<net::UdpSocket>(serverIp, serverPort);
+    remoteSocket = std::make_unique<rdt::RDTSocket>();
+    remoteSocket->setReceptorSettings(serverIp, std::stoi(serverPort));
   }
 
   bool Client::setCommand(const std::string& command) {
@@ -19,7 +20,7 @@ Client::Client(const std::string& serverIp, const std::string& serverPort) {
   }
 
   bool Client::create() {
-    trlt::CreateNodePacket packet;
+    msg::CreateNodePacket packet;
     system("nano spawn.conf");
     std::map<std::string, std::string> settings;
     settings["Node_Name"] = "";
@@ -36,7 +37,7 @@ Client::Client(const std::string& serverIp, const std::string& serverPort) {
   }
 
   bool Client::read() {    
-    trlt::ReadNodePacket packet;
+    msg::ReadNodePacket packet;
     system("nano ask.conf");
     std::map<std::string, std::string> settings;
     settings["Node_Name"] = "";
@@ -55,7 +56,7 @@ Client::Client(const std::string& serverIp, const std::string& serverPort) {
   }
 
   bool Client::update() {
-    trlt::UpdateNodePacket packet;
+    msg::UpdateNodePacket packet;
     system("nano update.conf");
     std::map<std::string, std::string> settings;
     settings["Node_Name"] = "";
@@ -73,7 +74,7 @@ Client::Client(const std::string& serverIp, const std::string& serverPort) {
   }
 
   bool Client::drop() {
-    trlt::DeleteNodePacket packet;
+    msg::DeleteNodePacket packet;
     system("nano drop.conf");
     std::map<std::string, std::string> settings;
     settings["Mode"] = "";

@@ -71,14 +71,29 @@ int UdpSocket::getSocketFileDescriptor() const
   return socket_file_descriptor;
 }
 
-std::string getIP() const
+std::string UdpSocket::getIP() const
 {
   return IP;
 }
 
-std::string getPort() const
+uint16_t UdpSocket::getPort() const
 {
-  return Port;
+  return std::stoi(Port);
+}
+
+std::string UdpSocket::getSenderIP()
+{
+  char addr_from[INET_ADDRSTRLEN];
+
+  inet_ntop(sender_addr.ss_family, get_in_addr((struct sockaddr *)&sender_addr),
+                  addr_from, sizeof(addr_from));
+  
+  return std::string(addr_from);
+}
+
+uint16_t UdpSocket::getSenderPort()
+{
+  return get_in_port((struct sockaddr *)&sender_addr);
 }
 
 int UdpSocket::sendAll(u_char *buffer, int &bytes_sent, bool to_sender)
@@ -106,7 +121,7 @@ int UdpSocket::sendAll(u_char *buffer, int &bytes_sent, bool to_sender)
   return n == -1 ? -1 : 0; // return -1 cuano falla, 0 cuando es exitoso
 }
 
-int UdpSocket::simpleRecv(u_char* buffer, std::string &IP_from, uint16_t &Port_from)
+int UdpSocket::simpleRecv(u_char* buffer)
 {
   int n;
   n = recvfrom(socket_file_descriptor, buffer, MAX_DGRAM_SIZE, 0,
@@ -115,16 +130,6 @@ int UdpSocket::simpleRecv(u_char* buffer, std::string &IP_from, uint16_t &Port_f
   // 0 cuando el host externo cerró la conexión
   if (n == 0)
     std::cerr << "El ordenador de destino se desconectó inesperadamente...\n";
-
-  // una vez terminado el recibo de datos
-  // obtenemos el IP y puerto del emisor
-  char addr_from[INET_ADDRSTRLEN];
-
-  inet_ntop(sender_addr.ss_family, get_in_addr((struct sockaddr *)&sender_addr),
-            addr_from, sizeof(addr_from));
-
-  IP_from = addr_from;                                      // seteamos el ip
-  Port_from = get_in_port((struct sockaddr *)&sender_addr); // seteamos el puerto
 
   return n; // MAX_DGRAM_SIZE cuando hay éxito, -1 en el otro caso
 }

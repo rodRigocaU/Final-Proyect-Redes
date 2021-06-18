@@ -21,7 +21,7 @@
 namespace net
 {
   const int MAX_DGRAM_SIZE = 1000;
-
+  
   class UdpSocket
   {
   private:
@@ -37,11 +37,15 @@ namespace net
     UdpSocket(const std::string &_IP, const std::string &_Port);
     
     int sendAll(u_char *buffer, int &bytes_sent, bool to_sender);
-    int simpleRecv(u_char *buffer, std::string &IP_from, uint16_t &Port_from);
+    int simpleRecv(u_char *buffer);
 
-    int getSocketFileDescriptor();
-    std::string getIP();
-    std::string getPort();
+    int getSocketFileDescriptor() const;
+    std::string getIP() const;
+    uint16_t getPort() const;
+
+    std::string getSenderIP();
+    uint16_t getSenderPort();
+    
     
     void *get_in_addr(struct sockaddr *sa);
     uint16_t get_in_port(struct sockaddr *sa);

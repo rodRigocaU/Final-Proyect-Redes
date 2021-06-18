@@ -32,6 +32,7 @@ namespace app
     
     int mainPort;
     std::string mainIp;
+
  
     std::map<int,std::string>   connections;
     std::vector<int> socketRepositories; // se usa en el maestro
