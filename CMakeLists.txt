@@ -21,13 +21,16 @@ file(GLOB SOURCE_FILES
   "src/App/TransportParser/*.cpp"
   "src/Network/*.cpp"
   "src/Network/Algorithm/*.cpp"
-  "src/Database/*.cpp"
 )
 
-add_executable(CenapseClient src/Client.cpp ${SOURCE_FILES})
-add_executable(CenapseServer src/MainServer.cpp ${SOURCE_FILES})
-add_executable(CenapseSlave src/Slave.cpp ${SOURCE_FILES})
+file(GLOB SLAVE_SOURCE_FILES
+  "src/DataBase/*.cpp"
+)
+
+add_executable(CClient src/Client.cpp ${SOURCE_FILES})
+add_executable(CServer src/MainServer.cpp ${SOURCE_FILES})
+add_executable(CSlave src/Slave.cpp ${SOURCE_FILES} ${SLAVE_SOURCE_FILES})
 
 include_directories(/usr/include)
 link_directories(/usr/lib)
-target_link_libraries(CenapseSlave sqlite3)
+target_link_libraries(CSlave sqlite3)

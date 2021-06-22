@@ -1,11 +1,7 @@
 #ifndef CLIENT_INTERFACE_HPP_
 #define CLIENT_INTERFACE_HPP_
 
-#include "App/Tools/Colors.hpp"
-#include "App/Tools/Fixer.hpp"
-#include "App/Tools/InterfacePerformance.hpp"
-#include "App/TransportParser/Client0MainServerParser.hpp"
-#include "Network/RDTMask.hpp"
+#include "../../Network/RDTMask.hpp"
 
 #include <iostream>
 #include <functional>
