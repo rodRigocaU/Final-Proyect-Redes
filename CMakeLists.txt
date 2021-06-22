@@ -21,7 +21,7 @@ file(GLOB SOURCE_FILES
   "src/App/TransportParser/*.cpp"
   "src/Network/*.cpp"
   "src/Network/Algorithm/*.cpp"
-  "src/Database/*.cpp"
+  "src/DataBase/*.cpp"
 )
 
 add_executable(CenapseClient src/Client.cpp ${SOURCE_FILES})
