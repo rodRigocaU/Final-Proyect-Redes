@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.15)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 if(WIN32)
   message( FATAL_ERROR "Project \'CENAPSE\' can run only in Linux or Unix." )
@@ -15,17 +14,19 @@ project(Cenapse)#Means: "Synapse", but Azure took this name first :cry:
 
 include_directories(include)
 
-add_executable(CenapseClient src/Client.cpp)
-add_executable(CenapseServer src/MainServer.cpp)
-add_executable(CenapseSlave src/Slave.cpp)
+SET(SOURCE_CODE_SERVER_CLIENT
+  "src/App/Client/*.cpp"
+  "src/App/Server/*.cpp"
+  "src/App/Tools/*.cpp"
+  "src/App/TransportParser/*.cpp"
+  "src/Network/*.cpp"
+  "src/Network/Algorithm/*.cpp"
+)
+
+add_executable(CenapseClient src/Client.cpp ${SOURCE_CODE_SERVER_CLIENT})
+add_executable(CenapseServer src/MainServer.cpp ${SOURCE_CODE_SERVER_CLIENT})
+add_executable(CenapseSlave src/Slave.cpp ${SOURCE_CODE_SERVER_CLIENT} "src/Database/*.cpp")
 
 include_directories(/usr/include)
 link_directories(/usr/lib)
 target_link_libraries(CenapseSlave sqlite3)
-
-# Optional
-#find_package (SQLite3)
-#if (SQLITE3_FOUND)
-#  include_directories(${SQLITE3_INCLUDE_DIRS})
-#  target_link_libraries (CenapseSlave ${SQLITE3_LIBRARIES})
-#endif (SQLITE3_FOUND)

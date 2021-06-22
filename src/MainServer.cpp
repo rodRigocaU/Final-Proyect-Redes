@@ -1,14 +1,23 @@
-// MainServer.cpp
-#include "Network/Socket.hpp"
+#include "Network/RDTMask.hpp"
+#include "Server/ServerInterface.hpp"
+
 int main(){
-  RDT::UdpSocket mainServerListener("", "8000");
-  RDT::UdpSocket slaveServerSocket("35.188.208.43", "8000");
-  // RDT::UdpSocket slaveServerSocket("127.0.0.1", "9000");
+
+  //MainServerApp MainServer; 
+  rdt::RDTSocket mainServerListener;
+  mainServerListener.setReceptorSettings("", 8000);
+  std::string received_msg, ip_from;
+  uint16_t port_from;
+
+  mainServerListener.receive(received_msg, ip_from, port_from);
+  std::cout << received_msg << "\n";
+  std::cout << ip_from << "\n";
+  std::cout << port_from << "\n";
+
+  /*net::UdpSocket slaveServerSocket("35.188.208.43", "8000");
   std::string received_message, IP_from;
   uint16_t Port_from;
-  // recibes el mensaje desde el cliente
   mainServerListener.receive(received_message, IP_from, Port_from);
-  // envías el mensaje al servidor esclavo
-  slaveServerSocket.send(received_message);
+  slaveServerSocket.send(received_message);*/
   return 0;
 }
