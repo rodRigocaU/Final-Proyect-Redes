@@ -1,5 +1,5 @@
-#ifndef Sqlite_HPP_
-#define Sqlite_HPP_
+#ifndef SQLITE_HPP_
+#define SQLITE_HPP_
 
 #include <iostream>
 #include <sqlite3.h>
@@ -65,4 +65,4 @@ namespace db
 
 }
 
-#endif //Sqlite_HPP_
+#endif //SQLITE_HPP_

@@ -1,5 +1,0 @@
-/home/lonehandyman/Final-Proyect-Redes/build/CMakeFiles/rebuild_cache.dir
-/home/lonehandyman/Final-Proyect-Redes/build/CMakeFiles/edit_cache.dir
-/home/lonehandyman/Final-Proyect-Redes/build/CMakeFiles/CenapseSlave.dir
-/home/lonehandyman/Final-Proyect-Redes/build/CMakeFiles/CenapseServer.dir
-/home/lonehandyman/Final-Proyect-Redes/build/CMakeFiles/CenapseClient.dir

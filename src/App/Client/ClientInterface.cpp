@@ -1,8 +1,12 @@
 #include "App/Client/ClientInterface.hpp"
+#include "App/Tools/Colors.hpp"
+#include "App/Tools/Fixer.hpp"
+#include "App/Tools/InterfacePerformance.hpp"
+#include "App/TransportParser/Client0MainServerParser.hpp"
 
-using namespace app;
+namespace app{
 
-Client::Client(const std::string& serverIp, const std::string& serverPort) {
+  Client::Client(const std::string& serverIp, const std::string& serverPort) {
     commands["spawn"]  = std::bind(&Client::create, this);
     commands["ask"]    = std::bind(&Client::read, this);
     commands["update"] = std::bind(&Client::update, this);
@@ -30,7 +34,6 @@ Client::Client(const std::string& serverIp, const std::string& serverPort) {
     if(tool::readSettingsFile("spawn.conf", settings)){
       packet << settings;
       packet >> message;
-      std::cout << message << std::endl;
     }
     remoteSocket->send(message);
     return true;
@@ -49,7 +52,6 @@ Client::Client(const std::string& serverIp, const std::string& serverPort) {
     if(tool::readSettingsFile("ask.conf", settings)){
       packet << settings;
       packet >> message;
-      std::cout << message << std::endl;
     }
     remoteSocket->send(message);
     return true;
@@ -67,7 +69,6 @@ Client::Client(const std::string& serverIp, const std::string& serverPort) {
     if(tool::readSettingsFile("update.conf", settings)){
       packet << settings;
       packet >> message;
-      std::cout << message << std::endl;
     }
     remoteSocket->send(message);
     return true;
@@ -84,8 +85,9 @@ Client::Client(const std::string& serverIp, const std::string& serverPort) {
     if(tool::readSettingsFile("drop.conf", settings)){
       packet << settings;
       packet >> message;
-      std::cout << message << std::endl;
     }
     remoteSocket->send(message);
     return true;
   }
+
+}

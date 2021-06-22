@@ -1,124 +1,126 @@
 #include "App/TransportParser/Read.hpp"
 
-using namespace msg;
+namespace msg{
 
-void ReadNodePacket::Feature::reset(){
-  attrName = attrValue = "";
-  sqlOpId = SqlOperator::NoneSQL;
-  boolOpId = BooleanOperator::NoneBO;
-}
-
-ReadNodePacket::ReadNodePacket(){
-  clear();
-}
-
-ReadNodePacket::BooleanOperator ReadNodePacket::toBooleanEnum(const std::string& boolOp){
-  if(boolOp == "and")
-    return BooleanOperator::And;
-  else if(boolOp == "or")
-    return BooleanOperator::Or;
-  return BooleanOperator::NoneBO;
-}
-    
-void ReadNodePacket::clear() {
-  nodeId = "";
-  attribsReq = QueryMode::NoneQM;
-  nodeType = Class::NoneClass;
-  features.clear();
-}
-
-ReadNodePacket& operator<<(ReadNodePacket& packet, const std::string& message) {
-  packet.clear();
-  if(message.length() && message[0] != 'r') {
-    tool::ConsolePrint("[Error]: Incorrect key header.", RED);
-    exit(EXIT_FAILURE);
+  void ReadNodePacket::Feature::reset(){
+    attrName = attrValue = "";
+    sqlOpId = SqlOperator::NoneSQL;
+    boolOpId = BooleanOperator::NoneBO;
   }
-  std::string content = message.substr(1);
-  packet.nodeId = tool::asStreamString(content, 2);
-  packet.depth = tool::asStreamNumeric(content, 1);
-  packet.nodeType = static_cast<ReadNodePacket::Class>(tool::asStreamNumeric(content, 1));
-  packet.attribsReq = static_cast<ReadNodePacket::QueryMode>(tool::asStreamNumeric(content, 1));
-  std::size_t nFeatures = tool::asStreamNumeric(content, 2);
-  while(nFeatures-- != 0) {
-    ReadNodePacket::Feature feature;
-    feature.attrName = tool::asStreamString(content, 3);
-    feature.sqlOpId = static_cast<ReadNodePacket::SqlOperator>(tool::asStreamNumeric(content, 1));
-    feature.attrValue = tool::asStreamString(content, 3);
-    feature.boolOpId = static_cast<ReadNodePacket::BooleanOperator>(tool::asStreamNumeric(content, 1));
-    packet.features.push_back(feature);
+
+  ReadNodePacket::ReadNodePacket(){
+    clear();
   }
-  return packet;
-}
 
-ReadNodePacket& operator>>(ReadNodePacket& packet, std::string& message) {
-  message.clear();
-  message += "r";
-  std::string nameSize = std::to_string(packet.nodeId.length());
-  message += tool::fixToBytes(nameSize, 2);
-  message += packet.nodeId;
-  message += std::to_string(packet.depth);
-  message += std::to_string(packet.nodeType);
-  message += std::to_string(packet.attribsReq);
-  message += tool::fixToBytes(std::to_string(packet.features.size()), 2);
-  for(auto& feature : packet.features){
-    message += tool::fixToBytes(std::to_string(feature.attrName.length()), 3);
-    message += feature.attrName;
-    message += std::to_string(feature.sqlOpId);
-    message += tool::fixToBytes(std::to_string(feature.attrValue.length()), 3);
-    message += feature.attrValue;
-    message += std::to_string(feature.boolOpId);
+  ReadNodePacket::BooleanOperator ReadNodePacket::toBooleanEnum(const std::string& boolOp){
+    if(boolOp == "and")
+      return BooleanOperator::And;
+    else if(boolOp == "or")
+      return BooleanOperator::Or;
+    return BooleanOperator::NoneBO;
   }
-  return packet;
-}
+      
+  void ReadNodePacket::clear() {
+    nodeId = "";
+    attribsReq = QueryMode::NoneQM;
+    nodeType = Class::NoneClass;
+    features.clear();
+  }
 
-ReadNodePacket& operator<<(ReadNodePacket& packet, std::map<std::string, std::string>& settings){
-  packet.clear();
-  packet.nodeId = settings["Node_Name"];
-  packet.depth = std::stoi(settings["Depth"]);
-  std::string readType = settings["Leaf"];
-  if(readType == "on")
-    packet.depth = ReadNodePacket::Class::Leaf;
-  else if(readType == "off")
-    packet.depth = ReadNodePacket::Class::Internal;
-  else
-    packet.depth = ReadNodePacket::Class::NoneClass;
+  ReadNodePacket& operator<<(ReadNodePacket& packet, const std::string& message) {
+    packet.clear();
+    if(message.length() && message[0] != 'r') {
+      tool::ConsolePrint("[Error]: Incorrect key header.", RED);
+      exit(EXIT_FAILURE);
+    }
+    std::string content = message.substr(1);
+    packet.nodeId = tool::asStreamString(content, 2);
+    packet.depth = tool::asStreamNumeric(content, 1);
+    packet.nodeType = static_cast<ReadNodePacket::Class>(tool::asStreamNumeric(content, 1));
+    packet.attribsReq = static_cast<ReadNodePacket::QueryMode>(tool::asStreamNumeric(content, 1));
+    std::size_t nFeatures = tool::asStreamNumeric(content, 2);
+    while(nFeatures-- != 0) {
+      ReadNodePacket::Feature feature;
+      feature.attrName = tool::asStreamString(content, 3);
+      feature.sqlOpId = static_cast<ReadNodePacket::SqlOperator>(tool::asStreamNumeric(content, 1));
+      feature.attrValue = tool::asStreamString(content, 3);
+      feature.boolOpId = static_cast<ReadNodePacket::BooleanOperator>(tool::asStreamNumeric(content, 1));
+      packet.features.push_back(feature);
+    }
+    return packet;
+  }
 
-  std::string requirements = settings["Attributes_Required"];
+  ReadNodePacket& operator>>(ReadNodePacket& packet, std::string& message) {
+    message.clear();
+    message += "r";
+    std::string nameSize = std::to_string(packet.nodeId.length());
+    message += tool::fixToBytes(nameSize, 2);
+    message += packet.nodeId;
+    message += std::to_string(packet.depth);
+    message += std::to_string(packet.nodeType);
+    message += std::to_string(packet.attribsReq);
+    message += tool::fixToBytes(std::to_string(packet.features.size()), 2);
+    for(auto& feature : packet.features){
+      message += tool::fixToBytes(std::to_string(feature.attrName.length()), 3);
+      message += feature.attrName;
+      message += std::to_string(feature.sqlOpId);
+      message += tool::fixToBytes(std::to_string(feature.attrValue.length()), 3);
+      message += feature.attrValue;
+      message += std::to_string(feature.boolOpId);
+    }
+    return packet;
+  }
 
-  if(requirements == "on")
-    packet.attribsReq = ReadNodePacket::QueryMode::Required;
-  else if(requirements == "off")
-    packet.attribsReq = ReadNodePacket::QueryMode::NotRequired;
-  else
-    packet.attribsReq = ReadNodePacket::QueryMode::NoneQM;
-  std::string rawFeatureComponent;
-  std::stringstream featureGroup;
-  featureGroup << settings["Query_Features"];
-  ReadNodePacket::Feature singleFeature;
-  uint8_t state = 0;
-  while(std::getline(featureGroup, rawFeatureComponent, '|')){
-    tool::cleanSpaces(rawFeatureComponent);
-    std::cout << rawFeatureComponent << std::endl;
-    if(state == 0){
-      singleFeature.attrName = rawFeatureComponent;
+  ReadNodePacket& operator<<(ReadNodePacket& packet, std::map<std::string, std::string>& settings){
+    packet.clear();
+    packet.nodeId = settings["Node_Name"];
+    packet.depth = std::stoi(settings["Depth"]);
+    std::string readType = settings["Leaf"];
+    if(readType == "on")
+      packet.depth = ReadNodePacket::Class::Leaf;
+    else if(readType == "off")
+      packet.depth = ReadNodePacket::Class::Internal;
+    else
+      packet.depth = ReadNodePacket::Class::NoneClass;
+
+    std::string requirements = settings["Attributes_Required"];
+
+    if(requirements == "on")
+      packet.attribsReq = ReadNodePacket::QueryMode::Required;
+    else if(requirements == "off")
+      packet.attribsReq = ReadNodePacket::QueryMode::NotRequired;
+    else
+      packet.attribsReq = ReadNodePacket::QueryMode::NoneQM;
+    std::string rawFeatureComponent;
+    std::stringstream featureGroup;
+    featureGroup << settings["Query_Features"];
+    ReadNodePacket::Feature singleFeature;
+    uint8_t state = 0;
+    while(std::getline(featureGroup, rawFeatureComponent, '|')){
+      tool::cleanSpaces(rawFeatureComponent);
+      std::cout << rawFeatureComponent << std::endl;
+      if(state == 0){
+        singleFeature.attrName = rawFeatureComponent;
+      }
+      else if(state == 1){
+        singleFeature.sqlOpId = packet.sqlMeanings.find(rawFeatureComponent)->second;
+      }
+      else if(state == 2){
+        singleFeature.attrValue = rawFeatureComponent;
+      }
+      else{
+        singleFeature.boolOpId = packet.toBooleanEnum(rawFeatureComponent);
+        packet.features.push_back(singleFeature);
+        singleFeature.reset();
+        state = 0;
+        continue;
+      }
+      ++state;
     }
-    else if(state == 1){
-      singleFeature.sqlOpId = packet.sqlMeanings.find(rawFeatureComponent)->second;
-    }
-    else if(state == 2){
-      singleFeature.attrValue = rawFeatureComponent;
-    }
-    else{
-      singleFeature.boolOpId = packet.toBooleanEnum(rawFeatureComponent);
+    if(state != 0)
       packet.features.push_back(singleFeature);
-      singleFeature.reset();
-      state = 0;
-      continue;
-    }
-    ++state;
+    std::cout << state << std::endl;
+    return packet;
   }
-  if(state != 0)
-    packet.features.push_back(singleFeature);
-  std::cout << state << std::endl;
-  return packet;
+
 }
