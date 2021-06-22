@@ -14,18 +14,19 @@ project(Cenapse)#Means: "Synapse", but Azure took this name first :cry:
 
 include_directories(include)
 
-SET(SOURCE_CODE_SERVER_CLIENT
+file(GLOB SOURCE_FILES
   "src/App/Client/*.cpp"
   "src/App/Server/*.cpp"
   "src/App/Tools/*.cpp"
   "src/App/TransportParser/*.cpp"
   "src/Network/*.cpp"
   "src/Network/Algorithm/*.cpp"
+  "src/Database/*.cpp"
 )
 
-add_executable(CenapseClient src/Client.cpp ${SOURCE_CODE_SERVER_CLIENT})
-add_executable(CenapseServer src/MainServer.cpp ${SOURCE_CODE_SERVER_CLIENT})
-add_executable(CenapseSlave src/Slave.cpp ${SOURCE_CODE_SERVER_CLIENT} "src/Database/*.cpp")
+add_executable(CenapseClient src/Client.cpp ${SOURCE_FILES})
+add_executable(CenapseServer src/MainServer.cpp ${SOURCE_FILES})
+add_executable(CenapseSlave src/Slave.cpp ${SOURCE_FILES})
 
 include_directories(/usr/include)
 link_directories(/usr/lib)
