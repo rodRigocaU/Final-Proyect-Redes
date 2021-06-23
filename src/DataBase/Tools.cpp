@@ -1,11 +1,13 @@
 #include "DataBase/Tools.hpp"
 
+
 namespace tool{
 
     void printMsgError(char *msg)
     {
         std::cout << "SQL error: " << msg << std::endl;
-        free(msg);
+        sqlite3_free(msg);
+        // free(msg);
     }
 
     void decoOperator(std::string opt)

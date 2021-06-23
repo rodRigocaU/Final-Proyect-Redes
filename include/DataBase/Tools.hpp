@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include <sqlite3.h>
 
 namespace tool{
   using Record = std::vector<std::string>;

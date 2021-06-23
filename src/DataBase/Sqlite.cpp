@@ -1,5 +1,5 @@
 #include "DataBase/Sqlite.hpp"
-#include "DataBase/Tools.hpp"
+// #include "DataBase/Tools.hpp"
 
 namespace db{
 
@@ -40,7 +40,7 @@ namespace db{
     }
 
     // --------------C:Create : Insert Nodos,Relation,Attributes------------
-    void SQLite::Create(std::string name_node, std::vector<std::pair<std::string, std::string>> attributes, std::vector<std::string> nodes_relations)
+    void SQLite::Create(std::string name_node, std::map<std::string, std::string> attributes, std::vector<std::string> nodes_relations)
     {
         if (!exsitNodo(name_node))
         {
@@ -85,23 +85,23 @@ namespace db{
         closeDB();
     }
 
-    void SQLite::insertAttributes(std::string name_node, std::vector<std::pair<std::string, std::string>> attributes)
+    void SQLite::insertAttributes(std::string name_node, std::map<std::string, std::string> attributes)
     {
         if (exsitNodo(name_node))
         {
 
-            for (int i = 0; i < attributes.size(); i++)
+            for (auto& [name_attribute, value_attribute]: attributes)
             {
                 sql = "INSERT INTO Attribute (idAttribute,name_attribute,value_attribute) "
                     "VALUES ('" +
-                    name_node + "','" + attributes[i].first + "','" + attributes[i].second + "');";
+                    name_node + "','" + name_attribute + "','" + value_attribute + "');";
                 // std::cout<<sql<<std::endl;
                 existDataBase();
                 rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
 
                 if (printError)
                 {
-                    std::string attribute = "[ Name Attribute: " + attributes[i].first + " , Value Attribute: " + attributes[i].second + "]";
+                    std::string attribute = "[ Name Attribute: " + name_attribute + " , Value Attribute: " + value_attribute + "]";
                     if (rc != SQLITE_OK)
                     {
                         tool::printMsgError(MsgError);
@@ -281,7 +281,7 @@ namespace db{
         }
     }
 
-    void SQLite::UpdateAttribute(std::string query_value_node, std::pair<std::string, std::string> set_attribute)
+    void SQLite::UpdateAttribute(std::string query_value_node,std::string name_attribute,std::string value_attribute)
     {
 
         if (exsitNodo(query_value_node))
@@ -290,13 +290,13 @@ namespace db{
             const char *data = "Callback function called";
 
             //Actulizar atributo
-            sql = "UPDATE Attribute set value_attribute = '" + set_attribute.second + "' " + "WHERE idAttribute = '" + query_value_node + "' AND name_attribute = '" + set_attribute.first + "';";
+            sql = "UPDATE Attribute set value_attribute = '" + value_attribute + "' " + "WHERE idAttribute = '" + query_value_node + "' AND name_attribute = '" + name_attribute + "';";
             // std::cout << sql << std::endl;
             rc = sqlite3_exec(DB, sql.c_str(), tool::print_select_callback, (void *)data, &MsgError);
 
             if (printError)
             {
-                std::string setValue = "[ Name Atributo : " + set_attribute.first + " , Set value : " + set_attribute.second + " ] ";
+                std::string setValue = "[ Name Atributo : " + name_attribute + " , Set value : " + value_attribute + " ] ";
 
                 if (rc != SQLITE_OK)
                 {
@@ -316,17 +316,17 @@ namespace db{
         
     }
 
-    void SQLite::UpdateAttributes(std::string query_value_node, std::vector<std::pair<std::string, std::string>> set_attributes)
+    void SQLite::UpdateAttributes(std::string query_value_node, std::map<std::string, std::string> set_attributes)
     {
         if (exsitNodo(query_value_node))
         {
-            for (int i = 0; i < set_attributes.size(); i++)
+            for (auto& [name_attribute, value_attribute]: set_attributes)
             {
                 existDataBase();
                 const char *data = "Callback function called";
 
             
-                sql = "UPDATE Attribute set value_attribute = '" + set_attributes[i].second + "' " + "WHERE idAttribute = '" + query_value_node + "' AND name_attribute = '" + set_attributes[i].first + "';";
+                sql = "UPDATE Attribute set value_attribute = '" + value_attribute + "' " + "WHERE idAttribute = '" + query_value_node + "' AND name_attribute = '" + name_attribute + "';";
             
                 rc = sqlite3_exec(DB, sql.c_str(), tool::print_select_callback, (void *)data, &MsgError);
 
