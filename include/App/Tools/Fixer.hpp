@@ -15,7 +15,7 @@ namespace tool
 
   const std::size_t asStreamNumeric(std::string &source, const std::size_t& h_bytes);
 
-  void followUpPacket(std::string& message, const char& item, const std::size_t& bytes);
+  void paddingPacket(std::string& message, const char& item, const std::size_t& bytes);
 }
 
 #endif//

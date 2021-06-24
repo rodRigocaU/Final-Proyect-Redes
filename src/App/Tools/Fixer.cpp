@@ -29,7 +29,7 @@ namespace tool{
     return std::stoul(contentSizeStr);
   }
 
-  void followUpPacket(std::string& message, const char& item, const std::size_t& bytes){
+  void paddingPacket(std::string& message, const char& item, const std::size_t& bytes){
     if(bytes > message.length())
       message += std::string().assign(bytes - message.length(), item);
   }

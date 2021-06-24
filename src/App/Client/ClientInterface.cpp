@@ -12,8 +12,7 @@ namespace app{
     commands["update"] = std::bind(&Client::update, this);
     commands["drop"]   = std::bind(&Client::drop, this);
 
-    remoteSocket = std::make_unique<rdt::RDTSocket>();
-    remoteSocket->setReceptorSettings(serverIp, std::stoi(serverPort));
+    //
   }
 
   bool Client::setCommand(const std::string& command) {
@@ -35,7 +34,7 @@ namespace app{
       packet << settings;
       packet >> message;
     }
-    remoteSocket->send(message);
+    remoteSocket.send(message);
     return true;
   }
 
@@ -53,7 +52,7 @@ namespace app{
       packet << settings;
       packet >> message;
     }
-    remoteSocket->send(message);
+    remoteSocket.send(message);
     return true;
   }
 
@@ -70,7 +69,7 @@ namespace app{
       packet << settings;
       packet >> message;
     }
-    remoteSocket->send(message);
+    remoteSocket.send(message);
     return true;
   }
 
@@ -86,7 +85,7 @@ namespace app{
       packet << settings;
       packet >> message;
     }
-    remoteSocket->send(message);
+    remoteSocket.send(message);
     return true;
   }
 

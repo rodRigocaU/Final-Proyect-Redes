@@ -1,11 +1,10 @@
 #ifndef CLIENT_INTERFACE_HPP_
 #define CLIENT_INTERFACE_HPP_
 
-#include "../../Network/RDTMask.hpp"
+#include "../../Network/RDTSocket.hpp"
 
 #include <iostream>
 #include <functional>
-#include <memory>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -22,10 +21,10 @@ namespace app {
     bool update();
     bool drop();
     
-    std::unique_ptr<rdt::RDTSocket> remoteSocket;
+    rdt::RDTSocket remoteSocket;
   public:
-  Client(const std::string& serverIp, const std::string& serverPort);
-  bool setCommand(const std::string& command);
+    Client(const std::string& serverIp, const std::string& serverPort);
+    bool setCommand(const std::string& command);
   };
 }
 

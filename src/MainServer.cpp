@@ -1,18 +1,20 @@
-#include "Network/RDTMask.hpp"
+#include "Network/RDTSocket.hpp"
+#include "Network/RDTListener.hpp"
 #include "App/Server/ServerInterface.hpp"
 
 int main(){
-  //MainServerApp MainServer; 
-  rdt::RDTSocket mainServerListener;
-  mainServerListener.setReceptorSettings("", 8000);
-  std::string received_msg, ip_from;
-  uint16_t port_from;
-
-  mainServerListener.receive(received_msg, ip_from, port_from);
-  std::cout << received_msg << "\n";
-  std::cout << ip_from << "\n";
-  std::cout << port_from << "\n";
-
+  rdt::RDTListener listener;
+  if(listener.listen(5001) != net::Status::Done){
+    return EXIT_FAILURE;
+  }
+  rdt::RDTSocket socket;
+  if(listener.accept(socket) != net::Status::Done){
+    return EXIT_FAILURE;
+  }
+  std::string msg;
+  socket.receive(msg);
+  std::cout << msg << std::endl;
+  socket.send("AEA MANO");
   /*net::UdpSocket slaveServerSocket("35.188.208.43", "8000");
   std::string received_message, IP_from;
   uint16_t Port_from;

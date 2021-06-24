@@ -1,9 +1,10 @@
-#include "Network/RDTMask.hpp"
+#include "Network/RDTSocket.hpp"
 #include "App/TransportParser/Client0MainServerParser.hpp"
 #include "DataBase/Sqlite.hpp"
 
 int main()
 {
+  /*
   rdt::RDTSocket slaveServerSocket;
   slaveServerSocket.setReceptorSettings("", 8000);
   std::string received_comand, remoteIp;
@@ -31,5 +32,6 @@ int main()
   BD.printSelectNodos();
   BD.printSelectAttributes();
   BD.printSelectRelations();
-
+*/
+return 0;
 }

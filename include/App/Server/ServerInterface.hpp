@@ -1,14 +1,23 @@
 #ifndef SERVER_INTERFACE_HPP_
 #define SERVER_INTERFACE_HPP_
 
-namespace app
-{
+#include <iostream>
+#include <map>
+#include <memory>
+#include <thread>
+#include <vector>
 
-  class MainServerApp {
-    
+#include "../../Network/RDTSocket.hpp"
 
+namespace app{
+
+  class MainServer {
+  private:
+    rdt::RDTSocket listener;
+    std::vector<rdt::RDTSocket> repositoryPool;
   public:
-
+    MainServer(const uint16_t& localPort);
+    void run();
   };
 
 }
