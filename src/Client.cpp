@@ -1,12 +1,21 @@
 #include <iostream>
 #include "App/App.hpp"
 #include "Network/RDTMask.hpp"
+#include "Network/UdpSocket.hpp"
 
 int main(int argc, char *argv[]) {
+
   rdt::RDTSocket clientSocket;
   clientSocket.setReceptorSettings("127.0.0.1", 8000);
 
   clientSocket.send("hola como estas");
+
+  // net::UdpSocket clientSimpleSocket("127.0.0.1", "8000");
+  // u_char message[] = "hola como estas";
+  // int bytes_sent;
+
+  // clientSimpleSocket.sendAll(message, bytes_sent, false);
+
 
   // app::Client clientInstance("34.94.147.12", "8000");
 

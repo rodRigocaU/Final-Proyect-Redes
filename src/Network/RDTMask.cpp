@@ -13,7 +13,7 @@ namespace rdt{
   }
 
   bool RDTSocket::isCorrupted(const std::string& message, const std::string& hash){
-    return crypto::sha256(message) != hash;
+    return message != hash;
   }
 
   std::string RDTSocket::encode(const std::string& message){
@@ -26,14 +26,14 @@ namespace rdt{
 
   bool RDTSocket::decode(std::string& message){
     std::string header = message.substr(0, RDT_HEADER_BYTE_SIZE);
-    message = message.substr(RDT_HEADER_BYTE_SIZE);
+    message = message.substr(RDT_HEADER_BYTE_SIZE, std::stoi(header.substr(ALTERBIT_BYTE_SIZE + HASH_BYTE_SIZE, MSG_BYTE_SIZE)));
     return (std::stoi(header.substr(0, ALTERBIT_BYTE_SIZE)) == alterBit) &&
     (!isCorrupted(header.substr(ALTERBIT_BYTE_SIZE, HASH_BYTE_SIZE), crypto::sha256(message)));
   }
 
   void RDTSocket::setReceptorSettings(const std::string& IpAddress, const uint16_t& port){
-    mainSocket = std::make_unique<net::UdpSocket>(IpAddress, std::to_string(port));
-    timer[0].fd = mainSocket->getSocketFileDescriptor();
+    mainSocket.configureSocket(IpAddress, std::to_string(port));
+    timer[0].fd = mainSocket.getSocketFileDescriptor();
     timer[0].events = POLLIN;
   }
 
@@ -45,7 +45,7 @@ namespace rdt{
   }
 
   RDTSocket::Status RDTSocket::secureSend(std::string& packet, const uint8_t& expectedAlterBit) {
-    if(mainSocket != nullptr){
+    if(mainSocket.active()){
       int32_t bytes_sent = 0; // la cantidad de bytes enviados
       bool reached_correct_to_dest = false;
 
@@ -56,7 +56,7 @@ namespace rdt{
         char temp[net::MAX_DGRAM_SIZE + 1];
         strcpy(temp, packet.c_str());
         
-        if(mainSocket->sendAll(reinterpret_cast<u_char*>(temp), bytes_sent, false) == -1)
+        if(mainSocket.sendAll(reinterpret_cast<u_char*>(temp), bytes_sent, false) == -1)
           return Error;
 
         int32_t ret = poll(timer, 1, timeOut);
@@ -66,7 +66,7 @@ namespace rdt{
           continue;
         else {
           if(timer[0].revents & POLLIN) {
-            mainSocket->simpleRecv(recv_buffer);
+            mainSocket.simpleRecv(recv_buffer);
             if(expectedAlterBit != getBitAlternate(recv_buffer))
               continue;
 
@@ -80,23 +80,26 @@ namespace rdt{
   }
 
   RDTSocket::Status RDTSocket::secureRecv(std::string& packet, const uint8_t& expectedAlterBit){
-    if(mainSocket != nullptr){
-      u_char packetBuffer[net::MAX_DGRAM_SIZE + 1];
+    if(mainSocket.active()){
+      u_char packetBuffer[net::MAX_DGRAM_SIZE];
       bool correct_packet;
       int32_t bytes_sent;
       do {
-        mainSocket->simpleRecv(packetBuffer);
-        packetBuffer[net::MAX_DGRAM_SIZE] = '\0';
+        mainSocket.simpleRecv(packetBuffer);
         packet = std::string(reinterpret_cast<char*>(packetBuffer));
         correct_packet = decode(packet);
-
         if(correct_packet) {
-          char temp[net::MAX_DGRAM_SIZE + 1];
+          std::cout << mainSocket.getSenderIP() << "\n";
+          std::cout << mainSocket.getSenderPort() << "\n";
+
+          char temp[net::MAX_DGRAM_SIZE];
           std::string ACK = tool::fixToBytes(std::to_string(alterBit), ALTERBIT_BYTE_SIZE);
           tool::followUpPacket(ACK, '0', net::MAX_DGRAM_SIZE);
           strcpy(temp, ACK.c_str());
-          if(mainSocket->sendAll(reinterpret_cast<u_char*>(temp), bytes_sent, true) == -1)
+          if(mainSocket.sendAll(reinterpret_cast<u_char*>(temp), bytes_sent, true) == -1)
+          {
             return Error;
+          }  
         }
       } while (!correct_packet);
       return Done;
@@ -141,10 +144,11 @@ namespace rdt{
       if(connectionStatus != Done)
         return connectionStatus;
       message += packet_i;
+      switchBitAlternate();
     }
 
-    remoteIp = mainSocket->getSenderIP();  
-    remotePort = mainSocket->getSenderPort();
+    remoteIp = mainSocket.getSenderIP();  
+    remotePort = mainSocket.getSenderPort();
     return Done;
   }
 

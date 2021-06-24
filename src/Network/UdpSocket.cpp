@@ -1,47 +1,65 @@
 #include "Network/UdpSocket.hpp"
 
 namespace net{
+  UdpSocket::UdpSocket() {}
+
+  UdpSocket::UdpSocket(const UdpSocket& another_socket) 
+  {
+    configureSocket(another_socket.IP, another_socket.Port);
+  }
 
   UdpSocket::UdpSocket(const std::string &_IP, const std::string &_Port)
   {
-  IP = _IP;
-  Port = _Port;
-
-  int rv;
-
-  memset(&hints, 0, sizeof hints);
-  hints.ai_family = AF_UNSPEC;    // IPv4 or IPv6
-  hints.ai_socktype = SOCK_DGRAM; // UDP datagram
-  if (IP.empty())
-    hints.ai_flags = AI_PASSIVE; // uso mi propia IP, esto es para el caso del servidor
-
-  // en caso de que no se envíe ninguna IP, eso significa que el socket se ubicará en el
-  // lado del servidor
-  if ((rv = getaddrinfo(IP.empty() ? NULL : IP.c_str(), Port.c_str(), &hints, &servinfo)) != 0)
-  {
-    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-    return;
+    configureSocket(_IP, _Port);
   }
 
-  // loop through all the results and make a socket
-  for (configured_sockaddr = servinfo; configured_sockaddr != NULL; configured_sockaddr = configured_sockaddr->ai_next)
+  void UdpSocket::configureSocket(const std::string &_IP, const std::string &_Port)
   {
-    if ((socket_file_descriptor = socket(configured_sockaddr->ai_family, configured_sockaddr->ai_socktype, configured_sockaddr->ai_protocol)) == -1)
+    // // liberamos la memoria de la lista de resultados
+    // if(servinfo)
+    //   freeaddrinfo(servinfo);
+    // // cerramos nuestro sockets
+    // if(socket_file_descriptor)
+    //   close(socket_file_descriptor);
+
+    IP = _IP;
+    Port = _Port;
+
+    int rv;
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;    // IPv4 or IPv6
+    hints.ai_socktype = SOCK_DGRAM; // UDP datagram
+    if (IP.empty())
+      hints.ai_flags = AI_PASSIVE; // uso mi propia IP, esto es para el caso del servidor
+
+    // en caso de que no se envíe ninguna IP, eso significa que el socket se ubicará en el
+    // lado del servidor
+    if ((rv = getaddrinfo(IP.empty() ? NULL : IP.c_str(), Port.c_str(), &hints, &servinfo)) != 0)
     {
-      perror("talker: socket");
-      continue;
+      fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+      return;
     }
 
-    // indicamos que es un socket pasivo, osea el del servidor
-    if (IP.empty())
+    // loop through all the results and make a socket
+    for (configured_sockaddr = servinfo; configured_sockaddr != NULL; configured_sockaddr = configured_sockaddr->ai_next)
     {
-      if (bind(socket_file_descriptor, configured_sockaddr->ai_addr, configured_sockaddr->ai_addrlen) == -1)
+      if ((socket_file_descriptor = socket(configured_sockaddr->ai_family, configured_sockaddr->ai_socktype, configured_sockaddr->ai_protocol)) == -1)
       {
-        close(socket_file_descriptor);
-        perror("listener: bind");
+        perror("talker: socket");
         continue;
       }
-    }
+
+      // indicamos que es un socket pasivo, osea el del servidor
+      if (IP.empty())
+      {
+        if (bind(socket_file_descriptor, configured_sockaddr->ai_addr, configured_sockaddr->ai_addrlen) == -1)
+        {
+          close(socket_file_descriptor);
+          perror("listener: bind");
+          continue;
+        }
+      }
       break;
     }
 
@@ -51,18 +69,19 @@ namespace net{
       fprintf(stderr, "talker: failed to create socket\n");
       return;
     }
-
-    if (IP.empty())
-      freeaddrinfo(servinfo);
   }
 
   UdpSocket::~UdpSocket()
   {
     // liberamos la memoria de la lista de resultados
     freeaddrinfo(servinfo);
-
     // cerramos nuestro sockets
     close(socket_file_descriptor);
+  }
+
+  bool UdpSocket::active()
+  {
+    return !IP.empty();
   }
 
   int UdpSocket::getSocketFileDescriptor() const 
@@ -86,7 +105,6 @@ namespace net{
 
     inet_ntop(sender_addr.ss_family, get_in_addr((struct sockaddr *)&sender_addr),
                     addr_from, sizeof(addr_from));
-    
     return std::string(addr_from);
   }
 
@@ -129,7 +147,6 @@ namespace net{
     // 0 cuando el host externo cerró la conexión
     if (n == 0)
       std::cerr << "El ordenador de destino se desconectó inesperadamente...\n";
-
     return n; // MAX_DGRAM_SIZE cuando hay éxito, -1 en el otro caso
   }
 

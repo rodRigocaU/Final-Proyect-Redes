@@ -6,7 +6,6 @@ namespace app
 
   class MainServerApp {
     
-
   public:
 
   };

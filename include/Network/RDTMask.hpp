@@ -22,7 +22,7 @@ namespace rdt
   private:
     typedef struct pollfd SocketTimer;
     uint8_t alterBit = ALTERBIT_LOWERBOUND;
-    std::unique_ptr<net::UdpSocket> mainSocket;
+    net::UdpSocket mainSocket;
     SocketTimer timer[1]; 
 
     uint8_t switchBitAlternate();

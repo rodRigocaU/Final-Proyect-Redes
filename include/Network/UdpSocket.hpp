@@ -34,11 +34,15 @@ namespace net
     std::string Port;
 
   public:
+    UdpSocket();
+    UdpSocket(const UdpSocket& another_socket);
     UdpSocket(const std::string &_IP, const std::string &_Port);
-    
+    void configureSocket(const std::string &_IP, const std::string &_Port);
+
     int sendAll(u_char *buffer, int &bytes_sent, bool to_sender);
     int simpleRecv(u_char *buffer);
 
+    bool active();
     int getSocketFileDescriptor() const;
     std::string getIP() const;
     uint16_t getPort() const;
