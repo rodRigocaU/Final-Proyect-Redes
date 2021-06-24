@@ -1,6 +1,7 @@
 #include "Network/RDTSocket.hpp"
 #include "Network/Algorithm/sha256.hpp"
 #include "App/Tools/Fixer.hpp"
+#include <iomanip>
 
 #include <math.h>
 
@@ -205,4 +206,15 @@ net::Status rdt::RDTSocket::receive(std::string& message){
     switchBitAlternate();
   }
   return net::Status::Done;
+}
+
+std::ostream& operator<<(std::ostream& out, const rdt::RDTSocket& socket){
+  out << "+--------------------+\n";
+  out << "|RDT::Reliable Socket|\n";
+  out << "+--------------------+\n";
+  out << "|FD: " << std::setw(16) << socket.getSocketFileDescriptor() << "|\n";
+  out << "|Ip: " << std::setw(16) << socket.getRemoteIpAddress() << "|\n";
+  out << "|Port: " << std::setw(14) << socket.getRemotePort() << "|\n";
+  out << "+--------------------+\n";
+  return out;
 }

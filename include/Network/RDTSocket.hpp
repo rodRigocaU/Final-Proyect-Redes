@@ -13,8 +13,8 @@
 #define MSG_BYTE_SIZE         4
 #define RDT_HEADER_BYTE_SIZE  ALTERBIT_BYTE_SIZE + HASH_BYTE_SIZE + MSG_BYTE_SIZE
 
-namespace rdt
-{  
+namespace rdt {
+
   class RDTListener;
 
   class RDTSocket{
@@ -62,5 +62,7 @@ namespace rdt
   };
 
 }
+
+std::ostream& operator<<(std::ostream& out, const rdt::RDTSocket& socket);
 
 #endif //RDT_MASK_HPP_
