@@ -1,35 +1,10 @@
-#ifndef CLIENT_PROTOCOL_HANDLER_HPP_
-#define CLIENT_PROTOCOL_HANDLER_HPP_
-
-#include <iostream>
-#include <functional>
-#include <memory>
-#include <string>
-#include <sstream>
-#include <vector>
-#include <unordered_map>
+#include "App/Client/ClientInterface.hpp"
 #include "App/Tools/Colors.hpp"
 #include "App/Tools/Fixer.hpp"
 #include "App/Tools/InterfacePerformance.hpp"
 #include "App/TransportParser/Client0MainServerParser.hpp"
-#include "Network/Socket.hpp"
 
-namespace app {
-
-  class Client {
-  private:
-    std::unordered_map<std::string, std::function<bool(void)>> commands;
-
-    bool create();
-    bool read();
-    bool update();
-    bool drop();
-    
-    std::unique_ptr<RDT::UdpSocket> remoteSocket;
-  public:
-  Client(const std::string& serverIp, const std::string& serverPort);
-  bool setCommand(const std::string& command);
-  };
+namespace app{
 
   Client::Client(const std::string& serverIp, const std::string& serverPort) {
     commands["spawn"]  = std::bind(&Client::create, this);
@@ -37,7 +12,7 @@ namespace app {
     commands["update"] = std::bind(&Client::update, this);
     commands["drop"]   = std::bind(&Client::drop, this);
 
-    remoteSocket = std::make_unique<RDT::UdpSocket>(serverIp, serverPort);
+    //
   }
 
   bool Client::setCommand(const std::string& command) {
@@ -48,7 +23,7 @@ namespace app {
   }
 
   bool Client::create() {
-    trlt::CreateNodePacket packet;
+    msg::CreateNodePacket packet;
     system("nano spawn.conf");
     std::map<std::string, std::string> settings;
     settings["Node_Name"] = "";
@@ -58,14 +33,13 @@ namespace app {
     if(tool::readSettingsFile("spawn.conf", settings)){
       packet << settings;
       packet >> message;
-      std::cout << message << std::endl;
     }
-    remoteSocket->send(message);
+    remoteSocket.send(message);
     return true;
   }
 
   bool Client::read() {    
-    trlt::ReadNodePacket packet;
+    msg::ReadNodePacket packet;
     system("nano ask.conf");
     std::map<std::string, std::string> settings;
     settings["Node_Name"] = "";
@@ -77,14 +51,13 @@ namespace app {
     if(tool::readSettingsFile("ask.conf", settings)){
       packet << settings;
       packet >> message;
-      std::cout << message << std::endl;
     }
-    remoteSocket->send(message);
+    remoteSocket.send(message);
     return true;
   }
 
   bool Client::update() {
-    trlt::UpdateNodePacket packet;
+    msg::UpdateNodePacket packet;
     system("nano update.conf");
     std::map<std::string, std::string> settings;
     settings["Node_Name"] = "";
@@ -95,14 +68,13 @@ namespace app {
     if(tool::readSettingsFile("update.conf", settings)){
       packet << settings;
       packet >> message;
-      std::cout << message << std::endl;
     }
-    remoteSocket->send(message);
+    remoteSocket.send(message);
     return true;
   }
 
   bool Client::drop() {
-    trlt::DeleteNodePacket packet;
+    msg::DeleteNodePacket packet;
     system("nano drop.conf");
     std::map<std::string, std::string> settings;
     settings["Mode"] = "";
@@ -112,11 +84,9 @@ namespace app {
     if(tool::readSettingsFile("drop.conf", settings)){
       packet << settings;
       packet >> message;
-      std::cout << message << std::endl;
     }
-    remoteSocket->send(message);
+    remoteSocket.send(message);
     return true;
   }
-}
 
-#endif //CLIENT_PROTOCOL_HANDLER_HPP_
+}
