@@ -7,6 +7,7 @@ int main(){
   if(listener.listen(5001) != net::Status::Done){
     return EXIT_FAILURE;
   }
+  std::cout << listener << std::endl;
   rdt::RDTSocket socket;
   if(listener.accept(socket) != net::Status::Done){
     return EXIT_FAILURE;
@@ -20,5 +21,13 @@ int main(){
   uint16_t Port_from;
   mainServerListener.receive(received_message, IP_from, Port_from);
   slaveServerSocket.send(received_message);*/
+  /*
+  
+  while(true){
+    std::unique_ptr<RDTSocket> newSocket = std::make_unique<RDTSocket>();
+    
+  }
+
+  */
   return 0;
 }

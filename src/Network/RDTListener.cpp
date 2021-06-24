@@ -1,4 +1,5 @@
 #include "Network/RDTListener.hpp"
+#include <iomanip>
 
 net::Status rdt::RDTListener::listen(const uint16_t& listenPort){
   return listenSocket.bindPort(listenPort);
@@ -27,4 +28,17 @@ net::Status rdt::RDTListener::accept(rdt::RDTSocket& incomingConnection){
 
 void rdt::RDTListener::close(){
   listenSocket.disconnect();
+}
+
+const uint16_t& rdt::RDTListener::getLocalPort() const{
+  return listenSocket.getLocalPort();
+}
+
+std::ostream& operator<<(std::ostream& out, const rdt::RDTListener& listener){
+  out << "+--------------------+\n";
+  out << "|RDT::Listener       |\n";
+  out << "+--------------------+\n";
+  out << "|Port: " << std::setw(14) << listener.getLocalPort() << "|\n";
+  out << "+--------------------+\n";
+  return out;
 }

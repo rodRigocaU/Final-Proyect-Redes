@@ -2,15 +2,21 @@
 
 namespace app{
   
-  MainServer::MainServer(const uint16_t& localPort){
-    //listener.setReceptorSettings("", localPort);
+  ServerMaster::ServerMaster(const uint16_t& listenerPort){
+    if(listener.listen(listenerPort) != net::Status::Done){
+      exit(EXIT_FAILURE);
+    }
+    std::cout << "[SERVER MASTER]\n";
+    std::cout << listener << std::endl;
   }
 
-  void MainServer::run(){
-    std::string message, remoteIp;
-    uint16_t remotePort;
+  void ServerMaster::run(){
     while(true){
-      //listener.receive(message, remoteIp, remotePort);
+      std::shared_ptr<rdt::RDTSocket> newClientIntent;
+      newClientIntent = std::make_shared<rdt::RDTSocket>();
+      if(listener.accept(*newClientIntent) == net::Status::Done){
+        clientConnectionPool[newClientIntent->getSocketFileDescriptor()] = newClientIntent; 
+      }
     }
   }
 

@@ -13,6 +13,24 @@ rdt::RDTSocket::~RDTSocket(){
   disconnect();
 }
 
+const uint16_t& rdt::RDTSocket::getLocalPort() const{
+  return connectionInfo.localPort;
+}
+
+const std::string& rdt::RDTSocket::getRemoteIpAddress() const{
+  return connectionInfo.remoteIp;
+}
+
+const uint16_t& rdt::RDTSocket::getRemotePort() const{
+  return connectionInfo.remotePort;
+}
+
+int32_t rdt::RDTSocket::getSocketFileDescriptor() const{
+  if(mainSocket != nullptr)
+    return mainSocket->socketId;
+  return -1;
+}
+
 uint8_t rdt::RDTSocket::switchBitAlternate(){
   uint8_t tempMod = ALTERBIT_UPPERBOUND + 1 - ALTERBIT_LOWERBOUND;
   alterBit = (alterBit - ALTERBIT_LOWERBOUND + 1) % tempMod;

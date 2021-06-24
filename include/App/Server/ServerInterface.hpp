@@ -8,15 +8,17 @@
 #include <vector>
 
 #include "../../Network/RDTSocket.hpp"
+#include "../../Network/RDTListener.hpp"
 
 namespace app{
 
-  class MainServer {
+  class ServerMaster {
   private:
-    rdt::RDTSocket listener;
+    rdt::RDTListener listener;
     std::vector<rdt::RDTSocket> repositoryPool;
+    std::map<int32_t, std::shared_ptr<rdt::RDTSocket>> clientConnectionPool;
   public:
-    MainServer(const uint16_t& localPort);
+    ServerMaster(const uint16_t& listenerPort);
     void run();
   };
 

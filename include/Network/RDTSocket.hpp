@@ -21,8 +21,8 @@ namespace rdt
   private:
     class Connection{
     public:
-      std::string localIp = "<ANY>", remoteIp;
-      uint16_t localPort = 0, remotePort;
+      std::string localIp = "<ANY>", remoteIp = "<NONE>";
+      uint16_t localPort = 0, remotePort = 0;
     };
 
     typedef struct pollfd SocketTimer;
@@ -30,7 +30,7 @@ namespace rdt
     uint8_t alterBit;
 
     std::unique_ptr<net::UdpSocket> mainSocket;
-    Connection connectionInfo, lastConnectionIntent;
+    Connection connectionInfo;
     net::Status connectionStatus;
 
     uint8_t switchBitAlternate();
@@ -44,6 +44,7 @@ namespace rdt
     void setTimerConfigurations();
 
     net::Status bindPort(const uint16_t& localPort);
+    const uint16_t& getLocalPort() const;
   public:
     RDTSocket();
     ~RDTSocket();
@@ -51,6 +52,10 @@ namespace rdt
     void disconnect();
     net::Status send(const std::string& message);
     net::Status receive(std::string& message);
+
+    const std::string& getRemoteIpAddress() const;
+    const uint16_t& getRemotePort() const;
+    int32_t getSocketFileDescriptor() const;
 
     friend class net::UdpSocket;
     friend class RDTListener;
