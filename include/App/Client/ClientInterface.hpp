@@ -22,7 +22,7 @@ namespace app {
     bool update();
     bool drop();
     
-    std::unique_ptr<rdt::RDTSocket> remoteSocket;
+    rdt::RDTSocket remoteSocket;
   public:
   Client(const std::string& serverIp, const std::string& serverPort);
   bool setCommand(const std::string& command);

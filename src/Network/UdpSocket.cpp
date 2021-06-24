@@ -15,12 +15,13 @@ namespace net{
 
   void UdpSocket::configureSocket(const std::string &_IP, const std::string &_Port)
   {
-    // // liberamos la memoria de la lista de resultados
-    // if(servinfo)
-    //   freeaddrinfo(servinfo);
-    // // cerramos nuestro sockets
-    // if(socket_file_descriptor)
-    //   close(socket_file_descriptor);
+    if(active())
+    {
+      // liberamos la memoria de la lista de resultados
+      freeaddrinfo(servinfo);
+      // cerramos nuestro sockets
+      close(socket_file_descriptor);
+    }
 
     IP = _IP;
     Port = _Port;
@@ -81,7 +82,7 @@ namespace net{
 
   bool UdpSocket::active()
   {
-    return !IP.empty();
+    return !Port.empty();
   }
 
   int UdpSocket::getSocketFileDescriptor() const 
@@ -101,10 +102,12 @@ namespace net{
 
   std::string UdpSocket::getSenderIP()
   {
+
     char addr_from[INET_ADDRSTRLEN];
 
     inet_ntop(sender_addr.ss_family, get_in_addr((struct sockaddr *)&sender_addr),
                     addr_from, sizeof(addr_from));
+    
     return std::string(addr_from);
   }
 
@@ -141,7 +144,8 @@ namespace net{
   int UdpSocket::simpleRecv(u_char* buffer)
   {
     int n;
-    n = recvfrom(socket_file_descriptor, buffer, MAX_DGRAM_SIZE, 0,
+    sender_addr_len = sizeof sender_addr; // sufrimos en encontrarte :'v
+    n = recvfrom(this->socket_file_descriptor, buffer, MAX_DGRAM_SIZE, 0,
                   (struct sockaddr *)&sender_addr, &sender_addr_len);
 
     // 0 cuando el host externo cerró la conexión
@@ -150,7 +154,7 @@ namespace net{
     return n; // MAX_DGRAM_SIZE cuando hay éxito, -1 en el otro caso
   }
 
-  void* UdpSocket::get_in_addr(struct sockaddr *sa)
+  void *UdpSocket::get_in_addr(struct sockaddr *sa)
   {
     if (sa->sa_family == AF_INET)
       return &(((struct sockaddr_in *)sa)->sin_addr);

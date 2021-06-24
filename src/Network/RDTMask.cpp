@@ -5,6 +5,28 @@
 #include <math.h>
 
 namespace rdt{
+  // vea el siguiente link: https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+  float RDTSocket::RTTEstimator::EWMA(float constant, float firstTerm, float secondTerm) {
+    return (1 - constant) * firstTerm + constant * secondTerm;
+  }
+
+  void RDTSocket::RTTEstimator::estRTT() {
+    EstimatedRTT = static_cast<int>(EWMA(0.125, static_cast<float>(EstimatedRTT), static_cast<float>(SampleRTT)));
+  }
+
+  void RDTSocket::RTTEstimator::varRTT() {
+    DevRTT = static_cast<int>(EWMA(0.25, static_cast<float>(DevRTT), static_cast<float>(SampleRTT - EstimatedRTT)));
+  }
+  
+  int RDTSocket::RTTEstimator::operator()(int _SampleRTT) {
+    if(!SampleRTT) SampleRTT = _SampleRTT;
+    estRTT(); // primero obtenemos el estimated RTT
+    varRTT(); // luego su variación
+    return EstimatedRTT + 4 * DevRTT; // esto es lo que debemos esperar aproximadamente
+  }
+
+  RDTSocket::RTTEstimator::~RTTEstimator() {}
+
 
   uint8_t RDTSocket::switchBitAlternate(){
     uint8_t tempMod = ALTERBIT_UPPERBOUND + 1 - ALTERBIT_LOWERBOUND;
@@ -31,6 +53,17 @@ namespace rdt{
     (!isCorrupted(header.substr(ALTERBIT_BYTE_SIZE, HASH_BYTE_SIZE), crypto::sha256(message)));
   }
 
+
+
+
+  RDTSocket::RDTSocket() {}
+
+  RDTSocket::RDTSocket(const std::string& IpAddress, const uint16_t& port) {
+    mainSocket.configureSocket(IpAddress, std::to_string(port));
+    timer[0].fd = mainSocket.getSocketFileDescriptor();
+    timer[0].events = POLLIN;
+  }
+
   void RDTSocket::setReceptorSettings(const std::string& IpAddress, const uint16_t& port){
     mainSocket.configureSocket(IpAddress, std::to_string(port));
     timer[0].fd = mainSocket.getSocketFileDescriptor();
@@ -49,8 +82,10 @@ namespace rdt{
       int32_t bytes_sent = 0; // la cantidad de bytes enviados
       bool reached_correct_to_dest = false;
 
-      uint32_t timeOut = 200; // TO DO: Función para calcular el RTT
+      int32_t timeOut = estimateRTT(); // TO DO: Función para calcular el RTT
       u_char recv_buffer[net::MAX_DGRAM_SIZE];
+      auto t_init = std::chrono::high_resolution_clock::now();
+      auto t_end = std::chrono::high_resolution_clock::now();
       do{
         reached_correct_to_dest = false;
         char temp[net::MAX_DGRAM_SIZE + 1];
@@ -59,11 +94,19 @@ namespace rdt{
         if(mainSocket.sendAll(reinterpret_cast<u_char*>(temp), bytes_sent, false) == -1)
           return Error;
 
+        t_init = std::chrono::high_resolution_clock::now();
+        
         int32_t ret = poll(timer, 1, timeOut);
+        
+        t_end = std::chrono::high_resolution_clock::now();
+        // timeout estimado para el siguiente envío
+        timeOut = estimateRTT(std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_init).count());
+        
         if(ret == -1)
           return Error;
-        else if(ret == 0) // timeout
+        else if(ret == 0) {// timeout
           continue;
+        }
         else {
           if(timer[0].revents & POLLIN) {
             mainSocket.simpleRecv(recv_buffer);
@@ -81,25 +124,26 @@ namespace rdt{
 
   RDTSocket::Status RDTSocket::secureRecv(std::string& packet, const uint8_t& expectedAlterBit){
     if(mainSocket.active()){
-      u_char packetBuffer[net::MAX_DGRAM_SIZE];
+      u_char packetBuffer[net::MAX_DGRAM_SIZE + 1];
       bool correct_packet;
       int32_t bytes_sent;
       do {
-        mainSocket.simpleRecv(packetBuffer);
+        if(mainSocket.simpleRecv(packetBuffer) == -1)
+        {
+          perror("simpleRecv");
+        }
+
+        packetBuffer[net::MAX_DGRAM_SIZE] = '\0';
         packet = std::string(reinterpret_cast<char*>(packetBuffer));
         correct_packet = decode(packet);
-        if(correct_packet) {
-          std::cout << mainSocket.getSenderIP() << "\n";
-          std::cout << mainSocket.getSenderPort() << "\n";
 
-          char temp[net::MAX_DGRAM_SIZE];
+        if(correct_packet) {
+          char temp[net::MAX_DGRAM_SIZE + 1];
           std::string ACK = tool::fixToBytes(std::to_string(alterBit), ALTERBIT_BYTE_SIZE);
           tool::followUpPacket(ACK, '0', net::MAX_DGRAM_SIZE);
           strcpy(temp, ACK.c_str());
           if(mainSocket.sendAll(reinterpret_cast<u_char*>(temp), bytes_sent, true) == -1)
-          {
             return Error;
-          }  
         }
       } while (!correct_packet);
       return Done;
@@ -135,7 +179,10 @@ namespace rdt{
     std::string quantity_of_packets;
     connectionStatus = secureRecv(quantity_of_packets, alterBit);
     if(connectionStatus != Done)
+    {
       return connectionStatus;
+    }
+
     switchBitAlternate();
     uint64_t packetCount = std::stoi(quantity_of_packets);
     for(uint64_t i = 0; i < packetCount; ++i){
