@@ -2,6 +2,7 @@
 #define RDT_MASK_HPP_
 
 #include <memory>
+#include <chrono>
 #include <sys/poll.h>
 
 #include "UdpSocket.hpp"
@@ -11,7 +12,8 @@
 #define ALTERBIT_LOWERBOUND   1
 #define ALTERBIT_UPPERBOUND   2
 #define MSG_BYTE_SIZE         4
-#define RDT_HEADER_BYTE_SIZE  ALTERBIT_BYTE_SIZE + HASH_BYTE_SIZE + MSG_BYTE_SIZE
+#define RDT_HEADER_BYTE_SIZE  (ALTERBIT_BYTE_SIZE + HASH_BYTE_SIZE + MSG_BYTE_SIZE)
+#define DEFAULT_RTT 200
 
 namespace rdt {
 
@@ -25,9 +27,26 @@ namespace rdt {
       uint16_t localPort = 0, remotePort = 0;
     };
 
+    class RTTEstimator
+    {
+    private:
+      // todo en milisegundos
+      int SampleRTT = DEFAULT_RTT;
+      int EstimatedRTT = 0;
+      int DevRTT = 0;
+
+    public:
+      float EWMA(float constant, float firstTerm, float secondTerm);
+      void estRTT();
+      void varRTT();
+      int operator()(int _SampleRTT = -1);
+      ~RTTEstimator();
+    };
+
     typedef struct pollfd SocketTimer;
     SocketTimer timer[1]; 
     uint8_t alterBit;
+    RTTEstimator estimateRTT;
 
     std::unique_ptr<net::UdpSocket> mainSocket;
     Connection connectionInfo;

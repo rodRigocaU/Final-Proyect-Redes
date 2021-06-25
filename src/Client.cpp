@@ -17,10 +17,17 @@ int main(int argc, char *argv[]) {
   if(socket.connect("127.0.0.1", 5001) != net::Status::Done){
     return EXIT_FAILURE;
   }
-  socket.send("Hola como te va");
+  std::string text;
+  for(int i = 0; i < 2000; ++i){
+    text += std::to_string(i);
+  }
+  socket.send(text);
+
   std::string msg;
   socket.receive(msg);
-  std::cout << msg << std::endl;
-
+  std::cout << "Message: " << msg << std::endl;
+  std::cout << "IP from: " << socket.getRemoteIpAddress() << std::endl;
+  std::cout << "Port from: " << socket.getRemotePort() << std::endl;
+  std::cout << socket << std::endl;
   return EXIT_SUCCESS;
 }

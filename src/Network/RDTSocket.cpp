@@ -5,6 +5,32 @@
 
 #include <math.h>
 
+// vea el siguiente link: https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+float rdt::RDTSocket::RTTEstimator::EWMA(float constant, float firstTerm, float secondTerm)
+{
+  return (1 - constant) * firstTerm + constant * secondTerm;
+}
+
+void rdt::RDTSocket::RTTEstimator::estRTT()
+{
+  EstimatedRTT = static_cast<int>(EWMA(0.125, static_cast<float>(EstimatedRTT), static_cast<float>(SampleRTT)));
+}
+
+void rdt::RDTSocket::RTTEstimator::varRTT()
+{
+  DevRTT = static_cast<int>(EWMA(0.25, static_cast<float>(DevRTT), static_cast<float>(SampleRTT - EstimatedRTT)));
+}
+
+int rdt::RDTSocket::RTTEstimator::operator()(int _SampleRTT)
+{
+  if (_SampleRTT > 0) SampleRTT = _SampleRTT;
+  estRTT();                         // primero obtenemos el estimated RTT
+  varRTT();                         // luego su variación
+  return (EstimatedRTT + 4 * DevRTT < 0)? DEFAULT_RTT : EstimatedRTT + 4 * DevRTT; // esto es lo que debemos esperar aproximadamente
+}
+
+rdt::RDTSocket::RTTEstimator::~RTTEstimator() {}
+
 rdt::RDTSocket::RDTSocket(){
   alterBit = ALTERBIT_LOWERBOUND;
   connectionStatus = net::Status::Disconnected;
@@ -114,13 +140,20 @@ net::Status rdt::RDTSocket::secureSend(std::string& packet, const uint8_t& expec
     uint16_t remotePort;
     bool successSending = false;
 
-    uint32_t timeOut = 200; // TO DO: Función para calcular el RTT
+    int32_t EsRTT = estimateRTT(); // TO DO: Función para calcular el RTT
+    auto t_init = std::chrono::high_resolution_clock::now();
+    auto t_end = std::chrono::high_resolution_clock::now();
+    
     do{
       successSending = false;
       if(mainSocket->send(packet, connectionInfo.remoteIp, connectionInfo.remotePort) != net::Status::Done)
         return net::Status::Error;
 
-      int32_t responseTimeCode = poll(timer, 1, timeOut);
+      t_init = t_init = std::chrono::high_resolution_clock::now();
+      int32_t responseTimeCode = poll(timer, 1, EsRTT);
+      t_end = std::chrono::high_resolution_clock::now();
+      EsRTT = estimateRTT(std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_init).count());
+      
       if(responseTimeCode == -1)
         return net::Status::Error;
       else if(responseTimeCode == 0)
