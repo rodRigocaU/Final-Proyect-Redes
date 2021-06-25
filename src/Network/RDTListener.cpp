@@ -7,6 +7,7 @@ net::Status rdt::RDTListener::listen(const uint16_t& listenPort){
 
 net::Status rdt::RDTListener::accept(rdt::RDTSocket& incomingConnection){
   std::string connectionGretting, localConfirmedPort;
+  listenSocket.resetAlterBit();
   incomingConnection.mainSocket = std::make_unique<net::UdpSocket>();
   incomingConnection.setTimerConfigurations();
   //RECEIVING SOCKET CLIENT CREDENTIALS
@@ -16,7 +17,8 @@ net::Status rdt::RDTListener::accept(rdt::RDTSocket& incomingConnection){
     return net::Status::Error;
   incomingConnection.connectionInfo.remoteIp = listenSocket.connectionInfo.remoteIp;
   incomingConnection.connectionInfo.remotePort = listenSocket.connectionInfo.remotePort;
-  
+  incomingConnection.synchronizeACKs(listenSocket);
+
   //SENDING SOCKET SERVER CREDENTIALS
   if(incomingConnection.send("PASS") != net::Status::Done){
     incomingConnection.disconnect();

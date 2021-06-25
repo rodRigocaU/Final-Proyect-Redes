@@ -12,6 +12,7 @@ int main(){
   if(listener.accept(socket) != net::Status::Done){
     return EXIT_FAILURE;
   }
+  std::cout << socket << std::endl;
   std::string msg;
   socket.receive(msg);
   std::cout << msg << std::endl;

@@ -12,7 +12,9 @@ namespace app{
     commands["update"] = std::bind(&Client::update, this);
     commands["drop"]   = std::bind(&Client::drop, this);
 
-    //
+    if(clientSocket.connect(serverIp, std::stoi(serverPort)) != net::Status::Done){
+      exit(EXIT_FAILURE);
+    }
   }
 
   bool Client::setCommand(const std::string& command) {
@@ -34,7 +36,7 @@ namespace app{
       packet << settings;
       packet >> message;
     }
-    remoteSocket.send(message);
+    clientSocket.send(message);
     return true;
   }
 
@@ -52,7 +54,7 @@ namespace app{
       packet << settings;
       packet >> message;
     }
-    remoteSocket.send(message);
+    clientSocket.send(message);
     return true;
   }
 
@@ -69,7 +71,7 @@ namespace app{
       packet << settings;
       packet >> message;
     }
-    remoteSocket.send(message);
+    clientSocket.send(message);
     return true;
   }
 
@@ -85,7 +87,7 @@ namespace app{
       packet << settings;
       packet >> message;
     }
-    remoteSocket.send(message);
+    clientSocket.send(message);
     return true;
   }
 

@@ -11,7 +11,7 @@
 #define ALTERBIT_LOWERBOUND   1
 #define ALTERBIT_UPPERBOUND   2
 #define MSG_BYTE_SIZE         4
-#define RDT_HEADER_BYTE_SIZE  ALTERBIT_BYTE_SIZE + HASH_BYTE_SIZE + MSG_BYTE_SIZE
+#define RDT_HEADER_BYTE_SIZE  (ALTERBIT_BYTE_SIZE + HASH_BYTE_SIZE + MSG_BYTE_SIZE)
 
 namespace rdt {
 
@@ -45,6 +45,8 @@ namespace rdt {
 
     net::Status bindPort(const uint16_t& localPort);
     const uint16_t& getLocalPort() const;
+    void resetAlterBit();
+    void synchronizeACKs(const RDTSocket& other);
   public:
     RDTSocket();
     ~RDTSocket();

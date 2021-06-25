@@ -60,9 +60,18 @@ void rdt::RDTSocket::setTimerConfigurations(){
   }
 }
 
+void rdt::RDTSocket::resetAlterBit(){
+  alterBit = ALTERBIT_LOWERBOUND;
+}
+
+void rdt::RDTSocket::synchronizeACKs(const rdt::RDTSocket& other){
+  alterBit = other.alterBit;
+}
+
 net::Status rdt::RDTSocket::connect(const std::string& remoteIp, const uint16_t& remotePort){
   mainSocket = std::make_unique<net::UdpSocket>();
   setTimerConfigurations();
+  resetAlterBit();
   connectionInfo.remoteIp = remoteIp;
   connectionInfo.remotePort = remotePort;
   connectionStatus = net::Status::Disconnected;
@@ -89,6 +98,7 @@ void rdt::RDTSocket::disconnect(){
   if(mainSocket != nullptr){
     mainSocket->unbind();
     mainSocket.reset();
+    resetAlterBit();
     connectionStatus = net::Status::Disconnected;
   }
 }
@@ -179,7 +189,8 @@ net::Status rdt::RDTSocket::send(const std::string& message){
   switchBitAlternate();
 
   for(uint64_t i = 0, j = 0; i < packetCount; ++i, j += BODY_MSG_BYTE_SIZE) {
-    std::string packetChunk = encode(message.substr(j, BODY_MSG_BYTE_SIZE));
+    std::string packetChunk;
+    packetChunk = encode(message.substr(j, BODY_MSG_BYTE_SIZE));
     connectionStatus = secureSend(packetChunk, alterBit);
     if(connectionStatus != net::Status::Done)
       return connectionStatus;
