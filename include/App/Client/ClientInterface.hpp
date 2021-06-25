@@ -2,6 +2,7 @@
 #define CLIENT_INTERFACE_HPP_
 
 #include "../../Network/RDTSocket.hpp"
+#include "ClientCodeInput.hpp"
 
 #include <iostream>
 #include <functional>

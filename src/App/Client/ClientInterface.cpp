@@ -13,6 +13,7 @@ namespace app{
     commands["drop"]   = std::bind(&Client::drop, this);
 
     if(clientSocket.connect(serverIp, std::stoi(serverPort)) != net::Status::Done){
+      tool::ConsolePrint("=> Unexpected error, can not connect with server master.\n", RED);
       exit(EXIT_FAILURE);
     }
   }
@@ -28,9 +29,9 @@ namespace app{
     msg::CreateNodePacket packet;
     system("nano spawn.conf");
     std::map<std::string, std::string> settings;
-    settings["Node_Name"] = "";
-    settings["Attributes"] = "";
-    settings["Relations"] = "";
+    settings[CENAPSE_CODE_NODE_NAME] = "";
+    settings[CENAPSE_CODE_ATRIBUTES] = "";
+    settings[CENAPSE_CODE_RELATIONS] = "";
     std::string message;
     if(tool::readSettingsFile("spawn.conf", settings)){
       packet << settings;
@@ -44,11 +45,11 @@ namespace app{
     msg::ReadNodePacket packet;
     system("nano ask.conf");
     std::map<std::string, std::string> settings;
-    settings["Node_Name"] = "";
-    settings["Depth"] = "";
-    settings["Leaf"] = "";
-    settings["Attributes_Required"];
-    settings["Query_Features"] = "";
+    settings[CENAPSE_CODE_NODE_NAME] = "";
+    settings[CENAPSE_CODE_DEPTH] = "";
+    settings[CENAPSE_CODE_LEAF] = "";
+    settings[CENAPSE_CODE_ATRIBUTES_REQUIRED];
+    settings[CENAPSE_CODE_QUERY_FEATURES] = "";
     std::string message;
     if(tool::readSettingsFile("ask.conf", settings)){
       packet << settings;
@@ -62,10 +63,10 @@ namespace app{
     msg::UpdateNodePacket packet;
     system("nano update.conf");
     std::map<std::string, std::string> settings;
-    settings["Node_Name"] = "";
-    settings["Mode"] = "";
-    settings["Node_Value"] = "";
-    settings["Attribute"] = "";
+    settings[CENAPSE_CODE_NODE_NAME] = "";
+    settings[CENAPSE_CODE_NA_MODE] = "";
+    settings[CENAPSE_CODE_NODE_VALUE] = "";
+    settings[CENAPSE_CODE_ATRIBUTE_I_VALUE] = "";
     std::string message;
     if(tool::readSettingsFile("update.conf", settings)){
       packet << settings;
@@ -79,9 +80,9 @@ namespace app{
     msg::DeleteNodePacket packet;
     system("nano drop.conf");
     std::map<std::string, std::string> settings;
-    settings["Mode"] = "";
-    settings["Node_Name"] = "";
-    settings["Attribute/Relation"] = "";
+    settings[CENAPSE_CODE_NAR_MODE] = "";
+    settings[CENAPSE_CODE_NODE_NAME] = "";
+    settings[CENAPSE_CODE_ATRIBUTE_I_RELATION] = "";
     std::string message;
     if(tool::readSettingsFile("drop.conf", settings)){
       packet << settings;

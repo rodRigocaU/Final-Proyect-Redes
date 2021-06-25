@@ -73,27 +73,27 @@ namespace msg{
 
   ReadNodePacket& operator<<(ReadNodePacket& packet, std::map<std::string, std::string>& settings){
     packet.clear();
-    packet.nodeId = settings["Node_Name"];
-    packet.depth = std::stoi(settings["Depth"]);
-    std::string readType = settings["Leaf"];
-    if(readType == "on")
+    packet.nodeId = settings[CENAPSE_CODE_NODE_NAME];
+    packet.depth = std::stoi(settings[CENAPSE_CODE_DEPTH]);
+    std::string readType = settings[CENAPSE_CODE_LEAF];
+    if(readType == CENAPSE_CODE_BOOLEAN_TRUE)
       packet.depth = ReadNodePacket::Class::Leaf;
-    else if(readType == "off")
+    else if(readType == CENAPSE_CODE_BOOLEAN_FALSE)
       packet.depth = ReadNodePacket::Class::Internal;
     else
       packet.depth = ReadNodePacket::Class::NoneClass;
 
-    std::string requirements = settings["Attributes_Required"];
+    std::string requirements = settings[CENAPSE_CODE_ATRIBUTES_REQUIRED];
 
-    if(requirements == "on")
+    if(requirements == CENAPSE_CODE_BOOLEAN_TRUE)
       packet.attribsReq = ReadNodePacket::QueryMode::Required;
-    else if(requirements == "off")
+    else if(requirements == CENAPSE_CODE_BOOLEAN_FALSE)
       packet.attribsReq = ReadNodePacket::QueryMode::NotRequired;
     else
       packet.attribsReq = ReadNodePacket::QueryMode::NoneQM;
     std::string rawFeatureComponent;
     std::stringstream featureGroup;
-    featureGroup << settings["Query_Features"];
+    featureGroup << settings[CENAPSE_CODE_QUERY_FEATURES];
     ReadNodePacket::Feature singleFeature;
     uint8_t state = 0;
     while(std::getline(featureGroup, rawFeatureComponent, '|')){

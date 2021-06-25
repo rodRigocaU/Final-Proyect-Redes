@@ -39,17 +39,17 @@ namespace msg{
 
   UpdateNodePacket& operator<<(UpdateNodePacket& packet, std::map<std::string, std::string>& settings){
     packet.clear();
-    packet.nodeId = settings["Node_Name"];
-    std::string updateType = settings["Mode"];
-    if(updateType == "node")
+    packet.nodeId = settings[CENAPSE_CODE_NODE_NAME];
+    std::string updateType = settings[CENAPSE_CODE_NA_MODE];
+    if(updateType == CENAPSE_CODE_NODE_OP)
       packet.updateMode = UpdateNodePacket::Mode::Object;
-    else if(updateType == "attribute")
+    else if(updateType == CENAPSE_CODE_ATRIBUTE_OP)
       packet.updateMode = UpdateNodePacket::Mode::Attribute;
     else
       packet.updateMode = UpdateNodePacket::Mode::None;
-    packet.newNodeValue = settings["Node_Value"];
+    packet.newNodeValue = settings[CENAPSE_CODE_NODE_VALUE];
     std::stringstream attributeGroup;
-    attributeGroup << settings["Attribute"];
+    attributeGroup << settings[CENAPSE_CODE_ATRIBUTE_I_VALUE];
     std::string nameAttr, valAttr;
     std::getline(attributeGroup, nameAttr, '|');
     std::getline(attributeGroup, valAttr);
