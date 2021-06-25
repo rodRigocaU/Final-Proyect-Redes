@@ -141,15 +141,15 @@ net::Status rdt::RDTSocket::secureSend(std::string& packet, const uint8_t& expec
     bool successSending = false;
 
     int32_t EsRTT = estimateRTT(); // TO DO: Función para calcular el RTT
-    auto t_init = std::chrono::high_resolution_clock::now();
-    auto t_end = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point t_init;
+    std::chrono::high_resolution_clock::time_point t_end;
     
     do{
       successSending = false;
       if(mainSocket->send(packet, connectionInfo.remoteIp, connectionInfo.remotePort) != net::Status::Done)
         return net::Status::Error;
 
-      t_init = t_init = std::chrono::high_resolution_clock::now();
+      t_init = std::chrono::high_resolution_clock::now();
       int32_t responseTimeCode = poll(timer, 1, EsRTT);
       t_end = std::chrono::high_resolution_clock::now();
       EsRTT = estimateRTT(std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_init).count());
