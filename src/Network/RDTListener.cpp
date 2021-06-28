@@ -2,29 +2,31 @@
 #include <iomanip>
 
 net::Status rdt::RDTListener::listen(const uint16_t& listenPort){
+  listenSocket.setCurrentPacketType(RDTSocket::RDTPacket::Type::Starter);
   return listenSocket.bindPort(listenPort);
 }
 
-net::Status rdt::RDTListener::accept(rdt::RDTSocket& incomingConnection){
-  std::string connectionGretting, localConfirmedPort;
+net::Status rdt::RDTListener::accept(RDTSocket& incomingConnection){
+  std::string connectionGretting;
   listenSocket.resetAlterBit();
-  incomingConnection.mainSocket = std::make_unique<net::UdpSocket>();
-  incomingConnection.setTimerConfigurations();
-  //RECEIVING SOCKET CLIENT CREDENTIALS
-  if(listenSocket.receive(connectionGretting) != net::Status::Done)
-    return net::Status::Error;
-  if(connectionGretting != "PLOX")
-    return net::Status::Error;
-  incomingConnection.connectionInfo.remoteIp = listenSocket.connectionInfo.remoteIp;
-  incomingConnection.connectionInfo.remotePort = listenSocket.connectionInfo.remotePort;
-  incomingConnection.synchronizeACKs(listenSocket);
-
-  //SENDING SOCKET SERVER CREDENTIALS
-  if(incomingConnection.send("PASS") != net::Status::Done){
+  if(incomingConnection.bindPort(0) != net::Status::Done){
     incomingConnection.disconnect();
     return net::Status::Error;
   }
+  //RECEIVING SOCKET CLIENT CREDENTIALS
+  if(listenSocket.receive(connectionGretting) != net::Status::Done)
+    return net::Status::Error;
+  incomingConnection.connectionInfo.remoteIp = listenSocket.connectionInfo.remoteIp;
+  incomingConnection.connectionInfo.remotePort = listenSocket.connectionInfo.remotePort;
+
+  //SENDING SOCKET SERVER CREDENTIALS
+  if(listenSocket.send(std::to_string(incomingConnection.getLocalPort())) != net::Status::Done){
+    return net::Status::Error;
+  }
+
+  incomingConnection.synchronizeACKs(listenSocket);
   incomingConnection.connectionStatus = net::Status::Connected;
+  incomingConnection.setCurrentPacketType(RDTSocket::RDTPacket::Type::Information);
   return net::Status::Done;
 }
 
