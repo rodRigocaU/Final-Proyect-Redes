@@ -15,6 +15,7 @@
 #define RDT_HEADER_BYTE_SIZE      (HASH_BYTE_SIZE + PACKET_TYPE_BYTE_SIZE + ALTERBIT_BYTE_SIZE + MSG_BYTE_SIZE)
 #define TIMEOUT                   0
 #define ERROR_TIMER               -1
+#define MAX_ACK_INTENTS           10
 
 namespace rdt {
 

@@ -228,9 +228,13 @@ void rdt::RDTSocket::disconnectInitializer(){
 }
 
 void rdt::RDTSocket::passiveDisconnect(){
-  std::string finalizerPacketRecv;
+  std::string finalizerPacketRecv, ACK_Intent;
   secureRecv(finalizerPacketRecv, RDTPacket::Type::Finalizer);
-  secureRecv(finalizerPacketRecv, RDTPacket::Type::Finalizer);
+  RDTPacket packer;
+  ACK_Intent = packer.encode("", lastAlterBit, RDTPacket::Type::Acknowledgement);
+  for (int32_t i = 0; i < MAX_ACK_INTENTS; ++i){
+    mainSocket->send(ACK_Intent, connectionInfo.remoteIp, connectionInfo.remotePort);
+  }
   disconnect();
 }
 
@@ -239,8 +243,8 @@ std::ostream& operator<<(std::ostream& out, const rdt::RDTSocket& socket){
   out << "|RDT::Reliable Socket|\n";
   out << "+--------------------+\n";
   out << "|FD: " << std::setw(16) << socket.getSocketFileDescriptor() << "|\n";
-  out << "|Ip: " << std::setw(16) << socket.getRemoteIpAddress() << "|\n";
-  out << "|Port: " << std::setw(14) << socket.getRemotePort() << "|\n";
+  out << "|RemIp: " << std::setw(13) << socket.getRemoteIpAddress() << "|\n";
+  out << "|RemPort: " << std::setw(11) << socket.getRemotePort() << "|\n";
   out << "+--------------------+\n";
   return out;
 }

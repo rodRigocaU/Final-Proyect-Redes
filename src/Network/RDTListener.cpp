@@ -42,7 +42,7 @@ std::ostream& operator<<(std::ostream& out, const rdt::RDTListener& listener){
   out << "+--------------------+\n";
   out << "|RDT::Listener       |\n";
   out << "+--------------------+\n";
-  out << "|Port: " << std::setw(14) << listener.getLocalPort() << "|\n";
+  out << "|LocPort: " << std::setw(11) << listener.getLocalPort() << "|\n";
   out << "+--------------------+\n";
   return out;
 }
