@@ -17,12 +17,17 @@ int main(int argc, char *argv[]) {
   if(socket.connect("127.0.0.1", 5001) != net::Status::Done){
     return EXIT_FAILURE;
   }
+  std::cout << "+-+-+-++-+-+SEND 1\n";
   socket.send("Hola como te va");
   std::string msg;
+  std::cout << "+-+-+-++-+-+RECV 1\n";
   socket.receive(msg);
-  std::cout << msg << std::endl;
+  std::cout << "==========MENSAJE: " << msg << std::endl;
+  std::cout << "+-+-+-++-+-+RECV 2\n";
+  socket.send("Hola como te va");
   socket.receive(msg);
-  std::cout << msg << std::endl;
+  std::cout << "==========MENSAJE: " << msg << std::endl;
+  std::cout << "++++PROCEED TO DISCONNECT\n";
   socket.disconnectInitializer();
   return EXIT_SUCCESS;
 }

@@ -14,10 +14,15 @@ int main(){
   }
   std::cout << socket << std::endl;
   std::string msg;
+  std::cout << "+-+-+-++-+-+RECV 1\n";
   socket.receive(msg);
-  std::cout << msg << std::endl;
+  std::cout << "==========MENSAJE: " << msg << std::endl;
+  std::cout << "+-+-+-++-+-+SEND 1\n";
   socket.send("AEA MANO");
+  std::cout << "+-+-+-++-+-+SEND 2\n";
+  socket.receive(msg);
   socket.send("RAAAA moment");
+  std::cout << "+-+-+-+PROCEED TO DISCONNECT\n";
   socket.passiveDisconnect();
   /*net::UdpSocket slaveServerSocket("35.188.208.43", "8000");
 

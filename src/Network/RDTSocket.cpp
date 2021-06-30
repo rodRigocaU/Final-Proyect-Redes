@@ -119,37 +119,49 @@ net::Status rdt::RDTSocket::secureSend(std::string& packet) {
     bool successSending = false;
 
     uint32_t timeOut = 200; // TO DO: Función para calcular el RTT
-    do{
-      if(mainSocket->send(packet, connectionInfo.remoteIp, connectionInfo.remotePort) != net::Status::Done)
+    while(!successSending){
+      std::string temp = packet;
+      temp[0] = (rand()%2)?'z':temp[0];
+      if(mainSocket->send(temp, connectionInfo.remoteIp, connectionInfo.remotePort) != net::Status::Done){
         return net::Status::Error;
-
+      }
+      std::cout << "SENT->>><\n";
       int32_t responseTimeCode = poll(sPool, 1, timeOut);
-      if(responseTimeCode == ERROR_TIMER)
+      if(responseTimeCode == ERROR_TIMER){
+        std::cout << "GOT A PROBLEM, A BIG ONE !!!!!!!\n";
         return net::Status::Error;
+      }
       else if(responseTimeCode == TIMEOUT)
         continue;
       else {
         if(existMessagesWaiting()) {
           std::string ACKPacket;
           RDTPacket packer;
+          std::cout << "CHECKING FOR AN ACK\n";
           mainSocket->receive(ACKPacket, remoteIp, remotePort);
           packer.decode(ACKPacket);
+          std::cout << ((ACKPacket[0] == 'z')?"RECEIVED A CORRUPTED PACKET":"NOT CORRUPTED PACKET RECEIVED") << '\n';
           if(!packer.isCorrupted()){
-            if(packer.getPacketType() == RDTPacket::Type::Acknowledgement && packer.isSynchronized(alterBit))
+            if(packer.isSynchronized(alterBit) && packer.getPacketType() == RDTPacket::Type::Acknowledgement){
+              std::cout << "CASE : SEND RECEIVED THE ACK\n";
               successSending = true;
+            }
+            else if(packer.isSynchronized(lastAlterBit) && packer.getPacketType() != RDTPacket::Type::Acknowledgement){
+              std::cout << "CASE : SEND DETECTS LAST RECEIVER SENDS BAD ACK\n";
+              std::string ACK = packer.encode("", packer.getACK(), RDTPacket::Type::Acknowledgement);
+              std::string temp2 = ACK;
+              temp2[0] = (rand()%2)?'z':temp2[0];
+              if(mainSocket->send(temp2, remoteIp, remotePort) != net::Status::Done)
+                return net::Status::Error;
+            }
             else{
-              if(packer.isSynchronized(lastAlterBit)){
-                std::string ACK = packer.encode("", packer.getACK(), RDTPacket::Type::Acknowledgement);
-                if(mainSocket->send(ACK, remoteIp, remotePort) != net::Status::Done)
-                  return net::Status::Error;
-              }
-              else
-                break;
+              std::cout << "CASE : SEND UNDERSTAND DONT NEED TO WAIT FOR ACK\n";
+              successSending = true;
             }
           }
         }
       }
-    } while(!successSending);
+    }
     switchBitAlternate();
     return net::Status::Done;
   }
@@ -162,7 +174,8 @@ net::Status rdt::RDTSocket::secureRecv(std::string& packet, const RDTPacket::Typ
     uint16_t remotePort;
     bool successReceiving = false;
     std::size_t bytes_sent;
-    do {
+    while (!successReceiving){
+      std::cout << "NEW RECEIVE STOP: " << alterBit << '\n';
       mainSocket->receive(packet, remoteIp, remotePort);
       if(connectionStatus == net::Status::Disconnected){
         connectionInfo.remoteIp = remoteIp;
@@ -170,16 +183,25 @@ net::Status rdt::RDTSocket::secureRecv(std::string& packet, const RDTPacket::Typ
       }
       RDTPacket packer;
       packer.decode(packet);
-      packet = packer.getMessageBody();
+      std::cout << "RECV->>><\n";
+      std::cout << ((packet[0] == 'z')?"RECEIVED A CORRUPTED PACKET":"NOT CORRUPTED PACKET RECEIVED") << '\n';
       if(!packer.isCorrupted()){
+        packet = packer.getMessageBody();
         std::string ACK;
-        if(packer.isSynchronized(alterBit))
+        if(packer.isSynchronized(alterBit)){
+          std::cout << "CASE : RECV GOT THE RIGHT PACKET\n";
           successReceiving = true;
+        }
+        else{
+          std::cout << "CASE : RECV DETECTS DUPLICATE PACKET\n";
+        }
         ACK = packer.encode("", packer.getACK(), RDTPacket::Type::Acknowledgement);
-        if(mainSocket->send(ACK, connectionInfo.remoteIp, connectionInfo.remotePort) != net::Status::Done)
+        std::string temp2 = ACK;
+        temp2[0] = (rand()%2)?'z':temp2[0];
+        if(mainSocket->send(temp2, connectionInfo.remoteIp, connectionInfo.remotePort) != net::Status::Done)
           return net::Status::Error;
       }
-    } while (!successReceiving);
+    }
     switchBitAlternate();
     return net::Status::Done;
   }
