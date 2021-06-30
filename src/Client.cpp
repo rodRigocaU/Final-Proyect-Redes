@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
   socket.receive(msg);
   std::cout << "==========MENSAJE: " << msg << std::endl;
   std::cout << "+-+-+-++-+-+RECV 2\n";
-  socket.send("Hola como te va");
+  socket.send("Hola como te va");//COMENTA ESTO PARA PROVOCAR EL BUG
   socket.receive(msg);
   std::cout << "==========MENSAJE: " << msg << std::endl;
   std::cout << "++++PROCEED TO DISCONNECT\n";
