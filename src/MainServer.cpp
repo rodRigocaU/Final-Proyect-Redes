@@ -17,6 +17,8 @@ int main(){
   socket.receive(msg);
   std::cout << msg << std::endl;
   socket.send("AEA MANO");
+  socket.send("RAAAA moment");
+  socket.passiveDisconnect();
   /*net::UdpSocket slaveServerSocket("35.188.208.43", "8000");
 
   std::string received_message, IP_from;

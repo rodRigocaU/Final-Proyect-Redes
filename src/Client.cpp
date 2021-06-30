@@ -21,6 +21,8 @@ int main(int argc, char *argv[]) {
   std::string msg;
   socket.receive(msg);
   std::cout << msg << std::endl;
-
+  socket.receive(msg);
+  std::cout << msg << std::endl;
+  socket.disconnectInitializer();
   return EXIT_SUCCESS;
 }

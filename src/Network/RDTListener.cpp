@@ -14,16 +14,16 @@ net::Status rdt::RDTListener::accept(RDTSocket& incomingConnection){
     return net::Status::Error;
   }
   //RECEIVING SOCKET CLIENT CREDENTIALS
-  if(listenSocket.receive(connectionGretting) != net::Status::Done)
+  if(listenSocket.secureRecv(connectionGretting, RDTSocket::RDTPacket::Type::Starter) != net::Status::Done)
     return net::Status::Error;
   incomingConnection.connectionInfo.remoteIp = listenSocket.connectionInfo.remoteIp;
   incomingConnection.connectionInfo.remotePort = listenSocket.connectionInfo.remotePort;
-
   //SENDING SOCKET SERVER CREDENTIALS
-  if(listenSocket.send(std::to_string(incomingConnection.getLocalPort())) != net::Status::Done){
+  RDTSocket::RDTPacket packer;
+  std::string acceptedPort = packer.encode(std::to_string(incomingConnection.getLocalPort()), listenSocket.alterBit, RDTSocket::RDTPacket::Type::Starter);
+  if(listenSocket.secureSend(acceptedPort) != net::Status::Done){
     return net::Status::Error;
   }
-
   incomingConnection.synchronizeACKs(listenSocket);
   incomingConnection.connectionStatus = net::Status::Connected;
   incomingConnection.setCurrentPacketType(RDTSocket::RDTPacket::Type::Information);

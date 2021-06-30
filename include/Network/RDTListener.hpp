@@ -16,6 +16,7 @@ namespace rdt{
     const uint16_t& getLocalPort() const;
 
     friend class RDTSocket;
+    friend class RDTPacket;
   };
 
 }

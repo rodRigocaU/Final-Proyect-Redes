@@ -22,14 +22,20 @@ net::UdpSocket::~UdpSocket(){
 net::Status net::UdpSocket::bind(const uint16_t& localPort){
   struct sockaddr_in sockSettings;
   sockSettings.sin_family = AF_INET;
-  sockSettings.sin_port = htons(localPort);
+  if(localPort == 0)
+    sockSettings.sin_port = 0;
+  else
+    sockSettings.sin_port = htons(localPort);
   sockSettings.sin_addr.s_addr = INADDR_ANY;
-  this->localIp = std::string(inet_ntoa(sockSettings.sin_addr));
-  this->localPort = localPort;
   if(::bind(socketId, reinterpret_cast<const sockaddr*>(&sockSettings), sizeof(sockSettings)) < 0){
     std::cerr << "[Socket Binding] : --FAILURE--\n";
     return net::Status::Error;
   }
+  memset(&sockSettings, 0, sizeof(sockSettings));
+  socklen_t len = sizeof(sockSettings);
+  getsockname(socketId, reinterpret_cast<sockaddr*>(&sockSettings), &len);
+  this->localIp = std::string(inet_ntoa(sockSettings.sin_addr));
+  this->localPort = ntohs(sockSettings.sin_port);
   return net::Status::Done;
 }
 

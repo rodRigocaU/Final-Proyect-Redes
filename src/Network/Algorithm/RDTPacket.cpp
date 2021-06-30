@@ -11,7 +11,7 @@
   +---------------------------------------+
 */
 
-const std::string& rdt::RDTSocket::RDTPacket::encode(const std::string& message, const uint8_t& currentACK, const Type& interpretation){
+std::string rdt::RDTSocket::RDTPacket::encode(const std::string& message, const uint16_t& currentACK, const Type& interpretation){
   ack = currentACK;
   packetType = interpretation;
   msgBody = message;
@@ -49,6 +49,6 @@ const std::string& rdt::RDTSocket::RDTPacket::getMessageBody(){
   return msgBody;
 }
 
-const uint8_t& rdt::RDTSocket::RDTPacket::getACK(){
+const uint16_t& rdt::RDTSocket::RDTPacket::getACK(){
   return ack;
 }
