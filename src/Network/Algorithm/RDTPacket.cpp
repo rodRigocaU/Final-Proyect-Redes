@@ -5,9 +5,9 @@
   +---------------------------------------+
   |                 SHA256                |[64 bytes]
   +---------------------------------------+
-  |  PacketType  |   ACK   | MessageSize  |[1 byte][1 byte][3 bytes]
+  | =PacketType  |  =ACK   |=MessageSize  |[1 byte][1 byte][3 bytes]
   +---------------------------------------+
-  |        MessageBody        |  Padding  |[(0,931) bytes][1000 - (MessageSize + header)]
+  |       =MessageBody        | =Padding  |[(0,931) bytes][1000 - (MessageSize + header)]
   +---------------------------------------+
 */
 

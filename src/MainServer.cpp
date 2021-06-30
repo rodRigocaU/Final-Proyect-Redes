@@ -20,7 +20,7 @@ int main(){
   std::cout << "+-+-+-++-+-+SEND 1\n";
   socket.send("AEA MANO");
   std::cout << "+-+-+-++-+-+SEND 2\n";
-  socket.receive(msg);//COMENTA ESTO PARA PROVOCAR EL BUG x2
+  //socket.receive(msg);//COMENTA ESTO PARA PROVOCAR EL BUG x2
   socket.send("RAAAA moment");
   std::cout << "+-+-+-+PROCEED TO DISCONNECT\n";
   socket.passiveDisconnect();

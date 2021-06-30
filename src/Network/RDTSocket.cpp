@@ -188,7 +188,7 @@ net::Status rdt::RDTSocket::secureRecv(std::string& packet, const RDTPacket::Typ
       if(!packer.isCorrupted()){
         packet = packer.getMessageBody();
         std::string ACK;
-        if(packer.isSynchronized(alterBit)){
+        if(packer.isSynchronized(alterBit) && packer.getPacketType() != RDTPacket::Type::Acknowledgement){
           std::cout << "CASE : RECV GOT THE RIGHT PACKET\n";
           successReceiving = true;
         }
