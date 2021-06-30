@@ -232,19 +232,19 @@ void rdt::RDTSocket::passiveDisconnect(){
   secureRecv(finalizerPacketRecv, RDTPacket::Type::Finalizer);
   RDTPacket packer;
   ACK_Intent = packer.encode("", lastAlterBit, RDTPacket::Type::Acknowledgement);
-  for (int32_t i = 0; i < MAX_ACK_INTENTS; ++i){
+  for (int32_t i = 0; i < MAX_ACK_RAID_INTENTS; ++i){
     mainSocket->send(ACK_Intent, connectionInfo.remoteIp, connectionInfo.remotePort);
   }
   disconnect();
 }
 
 std::ostream& operator<<(std::ostream& out, const rdt::RDTSocket& socket){
-  out << "+--------------------+\n";
-  out << "|RDT::Reliable Socket|\n";
-  out << "+--------------------+\n";
-  out << "|FD: " << std::setw(16) << socket.getSocketFileDescriptor() << "|\n";
-  out << "|RemIp: " << std::setw(13) << socket.getRemoteIpAddress() << "|\n";
-  out << "|RemPort: " << std::setw(11) << socket.getRemotePort() << "|\n";
-  out << "+--------------------+\n";
+  out << "+----------------------+\n";
+  out << "|RDT::Reliable Socket  |\n";
+  out << "+----------------------+\n";
+  out << "|FD: " << std::setw(18) << socket.getSocketFileDescriptor() << "|\n";
+  out << "|RemIp: " << std::setw(15) << socket.getRemoteIpAddress() << "|\n";
+  out << "|RemPort: " << std::setw(13) << socket.getRemotePort() << "|\n";
+  out << "+----------------------+\n";
   return out;
 }

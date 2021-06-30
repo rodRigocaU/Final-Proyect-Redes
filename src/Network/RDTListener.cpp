@@ -39,10 +39,10 @@ const uint16_t& rdt::RDTListener::getLocalPort() const{
 }
 
 std::ostream& operator<<(std::ostream& out, const rdt::RDTListener& listener){
-  out << "+--------------------+\n";
-  out << "|RDT::Listener       |\n";
-  out << "+--------------------+\n";
-  out << "|LocPort: " << std::setw(11) << listener.getLocalPort() << "|\n";
-  out << "+--------------------+\n";
+  out << "+----------------------+\n";
+  out << "|RDT::Listener(PASSIVE)|\n";
+  out << "+----------------------+\n";
+  out << "|LocPort: " << std::setw(13) << listener.getLocalPort() << "|\n";
+  out << "+----------------------+\n";
   return out;
 }
