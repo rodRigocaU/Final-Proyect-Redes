@@ -1,38 +1,13 @@
+#include "App/Tools/Fixer.hpp"
 #include "Network/RDTSocket.hpp"
 #include "Network/Algorithm/sha256.hpp"
-#include "App/Tools/Fixer.hpp"
+#include "Network/Algorithm/RDTEstimator.hpp"
+#include <chrono>
 #include <iomanip>
-
 #include <math.h>
 
-// vea el siguiente link: https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
-float rdt::RDTSocket::RTTEstimator::EWMA(float constant, float firstTerm, float secondTerm)
-{
-  return (1 - constant) * firstTerm + constant * secondTerm;
-}
-
-void rdt::RDTSocket::RTTEstimator::estRTT()
-{
-  EstimatedRTT = static_cast<int>(EWMA(0.125, static_cast<float>(EstimatedRTT), static_cast<float>(SampleRTT)));
-}
-
-void rdt::RDTSocket::RTTEstimator::varRTT()
-{
-  DevRTT = static_cast<int>(EWMA(0.25, static_cast<float>(DevRTT), static_cast<float>(SampleRTT - EstimatedRTT)));
-}
-
-int rdt::RDTSocket::RTTEstimator::operator()(int _SampleRTT)
-{
-  if (_SampleRTT > 0) SampleRTT = _SampleRTT;
-  estRTT();                         // primero obtenemos el estimated RTT
-  varRTT();                         // luego su variación
-  return (EstimatedRTT + 4 * DevRTT < 0)? DEFAULT_RTT : EstimatedRTT + 4 * DevRTT; // esto es lo que debemos esperar aproximadamente
-}
-
-rdt::RDTSocket::RTTEstimator::~RTTEstimator() {}
-
 rdt::RDTSocket::RDTSocket(){
-  alterBit = ALTERBIT_LOWERBOUND;
+  resetAlterBit();
   connectionStatus = net::Status::Disconnected;
 }
 
@@ -58,56 +33,59 @@ int32_t rdt::RDTSocket::getSocketFileDescriptor() const{
   return -1;
 }
 
-uint8_t rdt::RDTSocket::switchBitAlternate(){
-  uint8_t tempMod = ALTERBIT_UPPERBOUND + 1 - ALTERBIT_LOWERBOUND;
+uint16_t rdt::RDTSocket::switchBitAlternate(){
+  lastAlterBit = alterBit;
+  uint16_t tempMod = ALTERBIT_UPPERBOUND + 1 - ALTERBIT_LOWERBOUND;
   alterBit = (alterBit - ALTERBIT_LOWERBOUND + 1) % tempMod;
   return alterBit += ALTERBIT_LOWERBOUND;
 }
 
-std::string rdt::RDTSocket::encode(const std::string& message){
-  std::string sha256Hash = crypto::sha256(message);
-  std::string messageSize = tool::fixToBytes(std::to_string(message.length()), MSG_BYTE_SIZE);
-  std::string encodedMsg = tool::fixToBytes(std::to_string(alterBit), ALTERBIT_BYTE_SIZE) + sha256Hash + messageSize + message;
-  tool::paddingPacket(encodedMsg, '0', net::MAX_DGRAM_SIZE);
-  return encodedMsg;
-}
-
-bool rdt::RDTSocket::decode(std::string& message){
-  std::string header = message.substr(0, RDT_HEADER_BYTE_SIZE);
-  message = message.substr(RDT_HEADER_BYTE_SIZE, std::stoi(header.substr(ALTERBIT_BYTE_SIZE + HASH_BYTE_SIZE, MSG_BYTE_SIZE)));
-  return (std::stoi(header.substr(0, ALTERBIT_BYTE_SIZE)) == alterBit) &&
-  (header.substr(ALTERBIT_BYTE_SIZE, HASH_BYTE_SIZE) == crypto::sha256(message));
-}
-
 void rdt::RDTSocket::setTimerConfigurations(){
   if(mainSocket != nullptr){
-    timer[0].fd = mainSocket->socketId;
-    timer[0].events = POLLIN;
+    sPool[0].fd = mainSocket->socketId;
+    sPool[0].events = POLLIN;
   }
 }
 
+void rdt::RDTSocket::resetAlterBit(){
+  alterBit = ALTERBIT_LOWERBOUND;
+  lastAlterBit = ALTERBIT_UPPERBOUND;
+}
+
+void rdt::RDTSocket::synchronizeACKs(const rdt::RDTSocket& other){
+  alterBit = other.alterBit;
+  lastAlterBit = other.lastAlterBit;
+}
+
+void rdt::RDTSocket::setCurrentPacketType(const RDTPacket::Type& pType){
+  restrictedPacketType = pType;
+}
+
 net::Status rdt::RDTSocket::connect(const std::string& remoteIp, const uint16_t& remotePort){
-  mainSocket = std::make_unique<net::UdpSocket>();
-  setTimerConfigurations();
+  if(bindPort(0) != net::Status::Done){
+    disconnect();
+    return net::Status::Error;
+  }
   connectionInfo.remoteIp = remoteIp;
   connectionInfo.remotePort = remotePort;
   connectionStatus = net::Status::Disconnected;
-  std::string intentResponse;
   //SENDING SOCKET CLIENT CREDENTIALS
-  if(send("PLOX") != net::Status::Done){
+  setCurrentPacketType(RDTPacket::Type::Starter);
+  RDTPacket packer;
+  std::string startedPacket = packer.encode("", alterBit, RDTPacket::Type::Starter);
+  if(secureSend(startedPacket) != net::Status::Done){
     disconnect();
     return net::Status::Error;
   }
   //RECEIVING SOCKET SERVER CREDENTIALS
-  if(receive(intentResponse) != net::Status::Done){
+  std::string remoteSockMirrorPort;
+  if(secureRecv(remoteSockMirrorPort, RDTPacket::Type::Starter) != net::Status::Done){
     disconnect();
     return net::Status::Error;
   }
-  if(intentResponse != "PASS"){
-    disconnect();
-    return net::Status::Error;
-  }
+  connectionInfo.remotePort = std::stoi(remoteSockMirrorPort);
   connectionStatus = net::Status::Connected;
+  setCurrentPacketType(RDTPacket::Type::Information);
   return net::Status::Done;
 }
 
@@ -115,6 +93,7 @@ void rdt::RDTSocket::disconnect(){
   if(mainSocket != nullptr){
     mainSocket->unbind();
     mainSocket.reset();
+    resetAlterBit();
     connectionStatus = net::Status::Disconnected;
   }
 }
@@ -131,123 +110,156 @@ net::Status rdt::RDTSocket::bindPort(const uint16_t& localPort){
 }
 
 bool rdt::RDTSocket::existMessagesWaiting(){
-  return timer[0].revents & POLLIN;
+  return sPool[0].revents & POLLIN;
 }
 
-net::Status rdt::RDTSocket::secureSend(std::string& packet, const uint8_t& expectedAlterBit) {
+net::Status rdt::RDTSocket::secureSend(std::string& packet) {
   if(mainSocket != nullptr){
     std::string remoteIp;
     uint16_t remotePort;
     bool successSending = false;
 
-    int32_t EsRTT = estimateRTT(); // TO DO: Función para calcular el RTT
-    std::chrono::high_resolution_clock::time_point t_init;
-    std::chrono::high_resolution_clock::time_point t_end;
-    
-    do{
-      successSending = false;
-      if(mainSocket->send(packet, connectionInfo.remoteIp, connectionInfo.remotePort) != net::Status::Done)
+    std::chrono::high_resolution_clock::time_point t_pollStart, t_pollEnd;
+    RTTEstimator ewmaEstimator;
+    uint32_t estimatedRTT = ewmaEstimator.estimate(); // TO DO: Función para calcular el RTT
+    while(!successSending){
+      if(mainSocket->send(packet, connectionInfo.remoteIp, connectionInfo.remotePort) != net::Status::Done){
         return net::Status::Error;
+      }
+      t_pollStart = std::chrono::high_resolution_clock::now();
+      int32_t responseTimeCode = poll(sPool, 1, estimatedRTT);
+      t_pollEnd = std::chrono::high_resolution_clock::now();
+      estimatedRTT = ewmaEstimator.estimate(std::chrono::duration_cast<std::chrono::milliseconds>(t_pollEnd - t_pollStart).count());
 
-      t_init = std::chrono::high_resolution_clock::now();
-      int32_t responseTimeCode = poll(timer, 1, EsRTT);
-      t_end = std::chrono::high_resolution_clock::now();
-      EsRTT = estimateRTT(std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_init).count());
-      
-      if(responseTimeCode == -1)
+      if(responseTimeCode == ERROR_TIMER){
         return net::Status::Error;
-      else if(responseTimeCode == 0)
+      }
+      else if(responseTimeCode == TIMEOUT)
         continue;
       else {
         if(existMessagesWaiting()) {
-          std::string ACK;
-          mainSocket->receive(ACK, remoteIp, remotePort);
-          ACK = ACK.substr(0, ALTERBIT_BYTE_SIZE);
-          if(expectedAlterBit != std::stoi(ACK))
-            continue;
-          successSending = true;
+          std::string ACKPacket;
+          RDTPacket packer;
+          mainSocket->receive(ACKPacket, remoteIp, remotePort);
+          packer.decode(ACKPacket);
+          if(!packer.isCorrupted()){
+            //CASE 1: Normal situation, ACK received correctly
+            if(packer.isSynchronized(alterBit) && packer.getPacketType() == RDTPacket::Type::Acknowledgement)
+              successSending = true;
+            //CASE 2: Packet with past ACK waiting to receive an ACK yet
+            else if(packer.isSynchronized(lastAlterBit) && packer.getPacketType() != RDTPacket::Type::Acknowledgement){
+              std::string ACK = packer.encode("", packer.getACK(), RDTPacket::Type::Acknowledgement);
+              if(mainSocket->send(ACK, remoteIp, remotePort) != net::Status::Done)
+                return net::Status::Error;
+            }
+            //CASE 3 : Packet with the next ACK after the current one, same as CASE 1
+            else if(packer.getPacketType() != RDTPacket::Type::Acknowledgement)
+              successSending = true;
+          }
         }
       }
-    } while(!successSending);
+    }
+    switchBitAlternate();
     return net::Status::Done;
   }
   return net::Status::Disconnected;
 }
 
-net::Status rdt::RDTSocket::secureRecv(std::string& packet, const uint8_t& expectedAlterBit){
+net::Status rdt::RDTSocket::secureRecv(std::string& packet, const RDTPacket::Type& pType){
   if(mainSocket != nullptr){
     std::string remoteIp;
     uint16_t remotePort;
     bool successReceiving = false;
     std::size_t bytes_sent;
-    do {
+    while (!successReceiving){
       mainSocket->receive(packet, remoteIp, remotePort);
       if(connectionStatus == net::Status::Disconnected){
         connectionInfo.remoteIp = remoteIp;
         connectionInfo.remotePort = remotePort;
       }
-      successReceiving = decode(packet);
-
-      if(successReceiving) {
-        std::string ACK = tool::fixToBytes(std::to_string(alterBit), ALTERBIT_BYTE_SIZE);
-        tool::paddingPacket(ACK, '0', net::MAX_DGRAM_SIZE);
-        if(mainSocket->send(ACK, connectionInfo.remoteIp, connectionInfo.remotePort) != net::Status::Done)
+      RDTPacket packer;
+      packer.decode(packet);
+      if(!packer.isCorrupted()){
+        packet = packer.getMessageBody();
+        std::string ACK;
+        //CASE 1: Normal situation, Packet with correct ACK received
+        if(packer.isSynchronized(alterBit) && packer.getPacketType() != RDTPacket::Type::Acknowledgement)
+          successReceiving = true;
+        //CASE 2: Received an ACK of any other receive call function, unexpected and ignored
+        //        Receive function only accepts Packets with not ACK flags.
+        else if(packer.getPacketType() == RDTPacket::Type::Acknowledgement)
+          continue;
+        //CASE 1 & 3: Sending ACK for a Packet, no matters if this one has a correct ACK
+        ACK = packer.encode("", packer.getACK(), RDTPacket::Type::Acknowledgement);
+        if(mainSocket->send(ACK, remoteIp, remotePort) != net::Status::Done)
           return net::Status::Error;
       }
-    } while (!successReceiving);
+    }
+    switchBitAlternate();
     return net::Status::Done;
   }
   return net::Status::Disconnected;
 }
 
 net::Status rdt::RDTSocket::send(const std::string& message){
-  net::Status connectionStatus;
+  net::Status commStatus;
   const uint64_t BODY_MSG_BYTE_SIZE = net::MAX_DGRAM_SIZE - RDT_HEADER_BYTE_SIZE;
   uint64_t packetCount = std::ceil(double(message.length()) / double(BODY_MSG_BYTE_SIZE));
-
-  std::string packetCountEncoded = encode(std::to_string(packetCount));
-  connectionStatus = secureSend(packetCountEncoded, alterBit);
-  if(connectionStatus != net::Status::Done)
-    return connectionStatus;
-  switchBitAlternate();
+  RDTPacket packer;
+  std::string packetCountEncoded = packer.encode(std::to_string(packetCount), alterBit, RDTPacket::Type::Information);
+  if((commStatus = secureSend(packetCountEncoded)) != net::Status::Done)
+    return commStatus;
 
   for(uint64_t i = 0, j = 0; i < packetCount; ++i, j += BODY_MSG_BYTE_SIZE) {
-    std::string packetChunk = encode(message.substr(j, BODY_MSG_BYTE_SIZE));
-    connectionStatus = secureSend(packetChunk, alterBit);
-    if(connectionStatus != net::Status::Done)
-      return connectionStatus;
-    switchBitAlternate();
+    std::string packetChunk = packer.encode(message.substr(j, BODY_MSG_BYTE_SIZE), alterBit, restrictedPacketType);
+    if((commStatus = secureSend(packetChunk)) != net::Status::Done)
+      return commStatus;
   }
   return net::Status::Done; 
 }
 
 net::Status rdt::RDTSocket::receive(std::string& message){
   message.clear();
-  net::Status connectionStatus;
+  net::Status commStatus;
   std::string nSubPackets;
-  connectionStatus = secureRecv( nSubPackets, alterBit);
-  if(connectionStatus != net::Status::Done)
-    return connectionStatus;
-  switchBitAlternate();
-  uint64_t packetCount = std::stoi( nSubPackets);
+  if((commStatus = secureRecv(nSubPackets, RDTPacket::Type::Information)) != net::Status::Done)
+    return commStatus;
+  uint64_t packetCount = std::stoi(nSubPackets);
   for(uint64_t i = 0; i < packetCount; ++i){
     std::string packetChunk;
-    connectionStatus = secureRecv(packetChunk, alterBit);
-    if(connectionStatus != net::Status::Done)
-      return connectionStatus;
+    if((commStatus = secureRecv(packetChunk, restrictedPacketType)) != net::Status::Done)
+      return commStatus;
     message += packetChunk;
-    switchBitAlternate();
   }
   return net::Status::Done;
 }
 
+void rdt::RDTSocket::disconnectInitializer(){
+  RDTPacket packer;
+  std::string finalizerPacket = packer.encode("", alterBit, RDTPacket::Type::Finalizer);
+  setCurrentPacketType(RDTPacket::Finalizer);
+  secureSend(finalizerPacket);
+  disconnect();
+}
+
+void rdt::RDTSocket::passiveDisconnect(){
+  std::string finalizerPacketRecv, ACK_Intent;
+  secureRecv(finalizerPacketRecv, RDTPacket::Type::Finalizer);
+  RDTPacket packer;
+  ACK_Intent = packer.encode("", lastAlterBit, RDTPacket::Type::Acknowledgement);
+  for (int32_t i = 0; i < MAX_ACK_RAID_INTENTS; ++i){
+    mainSocket->send(ACK_Intent, connectionInfo.remoteIp, connectionInfo.remotePort);
+  }
+  disconnect();
+}
+
 std::ostream& operator<<(std::ostream& out, const rdt::RDTSocket& socket){
-  out << "+--------------------+\n";
-  out << "|RDT::Reliable Socket|\n";
-  out << "+--------------------+\n";
-  out << "|FD: " << std::setw(16) << socket.getSocketFileDescriptor() << "|\n";
-  out << "|Ip: " << std::setw(16) << socket.getRemoteIpAddress() << "|\n";
-  out << "|Port: " << std::setw(14) << socket.getRemotePort() << "|\n";
-  out << "+--------------------+\n";
+  out << "+----------------------+\n";
+  out << "|RDT::Reliable Socket  |\n";
+  out << "+----------------------+\n";
+  out << "|FD: " << std::setw(18) << socket.getSocketFileDescriptor() << "|\n";
+  out << "|RemIp: " << std::setw(15) << socket.getRemoteIpAddress() << "|\n";
+  out << "|RemPort: " << std::setw(13) << socket.getRemotePort() << "|\n";
+  out << "+----------------------+\n";
   return out;
 }

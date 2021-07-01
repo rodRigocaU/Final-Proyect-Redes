@@ -2,6 +2,7 @@
 #define CLIENT_INTERFACE_HPP_
 
 #include "../../Network/RDTSocket.hpp"
+#include "ClientCodeInput.hpp"
 
 #include <iostream>
 #include <functional>
@@ -21,7 +22,7 @@ namespace app {
     bool update();
     bool drop();
     
-    rdt::RDTSocket remoteSocket;
+    rdt::RDTSocket clientSocket;
   public:
     Client(const std::string& serverIp, const std::string& serverPort);
     bool setCommand(const std::string& command);

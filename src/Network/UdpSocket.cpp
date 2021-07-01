@@ -22,14 +22,20 @@ net::UdpSocket::~UdpSocket(){
 net::Status net::UdpSocket::bind(const uint16_t& localPort){
   struct sockaddr_in sockSettings;
   sockSettings.sin_family = AF_INET;
-  sockSettings.sin_port = htons(localPort);
+  if(localPort == 0)
+    sockSettings.sin_port = 0;
+  else
+    sockSettings.sin_port = htons(localPort);
   sockSettings.sin_addr.s_addr = INADDR_ANY;
-  this->localIp = std::string(inet_ntoa(sockSettings.sin_addr));
-  this->localPort = localPort;
   if(::bind(socketId, reinterpret_cast<const sockaddr*>(&sockSettings), sizeof(sockSettings)) < 0){
     std::cerr << "[Socket Binding] : --FAILURE--\n";
     return net::Status::Error;
   }
+  memset(&sockSettings, 0, sizeof(sockSettings));
+  socklen_t len = sizeof(sockSettings);
+  getsockname(socketId, reinterpret_cast<sockaddr*>(&sockSettings), &len);
+  this->localIp = std::string(inet_ntoa(sockSettings.sin_addr));
+  this->localPort = ntohs(sockSettings.sin_port);
   return net::Status::Done;
 }
 
@@ -49,7 +55,7 @@ net::Status net::UdpSocket::send(const std::string& message, const std::string& 
   }
   std::size_t bytesSent = 0, bytesLeft = MAX_DGRAM_SIZE;
   char buffer[MAX_DGRAM_SIZE + 1];
-  memset(buffer, 0, strlen(buffer));
+  memset(buffer, 0, strlen(buffer) + 1);
   strcpy(buffer, message.c_str());
   while(bytesSent < MAX_DGRAM_SIZE){
     size_t nbytesSent = 0;
@@ -68,7 +74,7 @@ net::Status net::UdpSocket::receive(std::string& message, std::string& remoteAdd
   socklen_t len = sizeof(destination);
   std::size_t bytesRecv = 0, bytesLeft = MAX_DGRAM_SIZE;
   char buffer[MAX_DGRAM_SIZE + 1];
-  memset(buffer, 0, strlen(buffer));
+  memset(buffer, 0, strlen(buffer) + 1);
   while(bytesRecv < MAX_DGRAM_SIZE){
     size_t nbytesRecv = 0;
     if((nbytesRecv = recvfrom(socketId, buffer + bytesRecv, bytesLeft, 0, reinterpret_cast<sockaddr*>(&destination), &len)) < 0){
@@ -80,6 +86,6 @@ net::Status net::UdpSocket::receive(std::string& message, std::string& remoteAdd
   }
   remoteAddress = std::string(inet_ntoa(destination.sin_addr));
   remotePort = ntohs(destination.sin_port);
-  message = std::string(buffer);
+  message = std::string(buffer).substr(0, MAX_DGRAM_SIZE);
   return net::Status::Done;
 }

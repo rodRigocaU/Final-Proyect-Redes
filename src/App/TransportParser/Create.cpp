@@ -64,10 +64,10 @@ namespace msg{
 
   CreateNodePacket& operator<<(CreateNodePacket& packet, std::map<std::string, std::string>& settings){
     packet.clear();
-    packet.nodeId = settings["Node_Name"];
+    packet.nodeId = settings[CENAPSE_CODE_NODE_NAME];
     std::stringstream attributeGroup, relationGroup, buffer;
-    attributeGroup << settings["Attributes"];
-    relationGroup << settings["Relations"];
+    attributeGroup << settings[CENAPSE_CODE_ATRIBUTES];
+    relationGroup << settings[CENAPSE_CODE_RELATIONS];
     std::string singleAttribute, singleRelation;
     while(std::getline(attributeGroup, singleAttribute, ',')){
       std::string key, value;
