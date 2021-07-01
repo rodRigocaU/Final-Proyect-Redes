@@ -6,6 +6,32 @@
 #include <iomanip>
 #include <math.h>
 
+// vea el siguiente link: https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+float rdt::RDTSocket::RTTEstimator::EWMA(float constant, float firstTerm, float secondTerm)
+{
+  return (1 - constant) * firstTerm + constant * secondTerm;
+}
+
+void rdt::RDTSocket::RTTEstimator::estRTT()
+{
+  EstimatedRTT = static_cast<int>(EWMA(0.125, static_cast<float>(EstimatedRTT), static_cast<float>(SampleRTT)));
+}
+
+void rdt::RDTSocket::RTTEstimator::varRTT()
+{
+  DevRTT = static_cast<int>(EWMA(0.25, static_cast<float>(DevRTT), static_cast<float>(SampleRTT - EstimatedRTT)));
+}
+
+int rdt::RDTSocket::RTTEstimator::operator()(int _SampleRTT)
+{
+  if (_SampleRTT > 0) SampleRTT = _SampleRTT;
+  estRTT();                         // primero obtenemos el estimated RTT
+  varRTT();                         // luego su variación
+  return (EstimatedRTT + 4 * DevRTT < 0)? DEFAULT_RTT : EstimatedRTT + 4 * DevRTT; // esto es lo que debemos esperar aproximadamente
+}
+
+rdt::RDTSocket::RTTEstimator::~RTTEstimator() {}
+
 rdt::RDTSocket::RDTSocket(){
   resetAlterBit();
   connectionStatus = net::Status::Disconnected;
