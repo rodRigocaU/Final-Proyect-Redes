@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
   }*/
 
   rdt::RDTSocket socket;
-  if(socket.connect("127.0.0.1", 5001) != net::Status::Done){
+  if(socket.connect("34.94.147.12", 5001) != net::Status::Done){
     return EXIT_FAILURE;
   }
   std::cout << socket << std::endl;
