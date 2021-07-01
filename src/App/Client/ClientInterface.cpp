@@ -11,11 +11,8 @@ namespace app{
     commands["ask"]    = std::bind(&Client::read, this);
     commands["update"] = std::bind(&Client::update, this);
     commands["drop"]   = std::bind(&Client::drop, this);
-
-    if(clientSocket.connect(serverIp, std::stoi(serverPort)) != net::Status::Done){
-      tool::ConsolePrint("=> Unexpected error, can not connect with server master.\n", RED);
-      exit(EXIT_FAILURE);
-    }
+    serverMasterIp = serverIp;
+    serverMasterPort = std::stoi(serverPort);
   }
 
   bool Client::setCommand(const std::string& command) {
@@ -37,7 +34,14 @@ namespace app{
       packet << settings;
       packet >> message;
     }
+    else
+      return false;
+    if(clientSocket.connect(serverMasterIp, serverMasterPort) != net::Status::Done){
+      tool::ConsolePrint("=> Unexpected error, can not connect with server master.\n", RED);
+      exit(EXIT_FAILURE);
+    }
     clientSocket.send(message);
+    clientSocket.disconnectInitializer();
     return true;
   }
 
@@ -55,7 +59,14 @@ namespace app{
       packet << settings;
       packet >> message;
     }
+    else
+      return false;
+    if(clientSocket.connect(serverMasterIp, serverMasterPort) != net::Status::Done){
+      tool::ConsolePrint("=> Unexpected error, can not connect with server master.\n", RED);
+      exit(EXIT_FAILURE);
+    }
     clientSocket.send(message);
+    clientSocket.disconnectInitializer();
     return true;
   }
 
@@ -72,7 +83,14 @@ namespace app{
       packet << settings;
       packet >> message;
     }
+    else
+      return false;
+    if(clientSocket.connect(serverMasterIp, serverMasterPort) != net::Status::Done){
+      tool::ConsolePrint("=> Unexpected error, can not connect with server master.\n", RED);
+      exit(EXIT_FAILURE);
+    }
     clientSocket.send(message);
+    clientSocket.disconnectInitializer();
     return true;
   }
 
@@ -88,7 +106,14 @@ namespace app{
       packet << settings;
       packet >> message;
     }
+    else
+      return false;
+    if(clientSocket.connect(serverMasterIp, serverMasterPort) != net::Status::Done){
+      tool::ConsolePrint("=> Unexpected error, can not connect with server master.\n", RED);
+      exit(EXIT_FAILURE);
+    }
     clientSocket.send(message);
+    clientSocket.disconnectInitializer();
     return true;
   }
 

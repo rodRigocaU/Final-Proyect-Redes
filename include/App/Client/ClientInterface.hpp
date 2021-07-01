@@ -23,6 +23,8 @@ namespace app {
     bool drop();
     
     rdt::RDTSocket clientSocket;
+    std::string serverMasterIp;
+    uint16_t serverMasterPort;
   public:
     Client(const std::string& serverIp, const std::string& serverPort);
     bool setCommand(const std::string& command);
