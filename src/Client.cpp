@@ -17,16 +17,22 @@ int main(int argc, char *argv[]) {
   if(socket.connect("127.0.0.1", 5001) != net::Status::Done){
     return EXIT_FAILURE;
   }
-  std::cout << "+-+-+-++-+-+SEND 1\n";
-  socket.send("Hola como te va");
+  std::cout << socket << std::endl;
   std::string msg;
+  socket.receive(msg);
+  std::cout << "==========MENSAJE: " << msg << std::endl;
+  socket.send("SOY GUAPO LO SE");
+  std::cout << "==========MENSAJE: " << msg << std::endl;
+  std::cout << "+-+-+-++-+-+SEND 1\n";
+  socket.send("hectiris@gmail.com");
   std::cout << "+-+-+-++-+-+RECV 1\n";
   socket.receive(msg);
   std::cout << "==========MENSAJE: " << msg << std::endl;
   std::cout << "+-+-+-++-+-+RECV 2\n";
-  //socket.send("Hola como te va");//COMENTA ESTO PARA PROVOCAR EL BUG
+  socket.send("Hola como te va");
   socket.receive(msg);
   std::cout << "==========MENSAJE: " << msg << std::endl;
+  socket.send("Bueno ya me voy");
   std::cout << "++++PROCEED TO DISCONNECT\n";
   socket.disconnectInitializer();
   return EXIT_SUCCESS;

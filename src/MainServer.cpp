@@ -12,16 +12,23 @@ int main(){
   if(listener.accept(socket) != net::Status::Done){
     return EXIT_FAILURE;
   }
-  std::cout << socket << std::endl;
   std::string msg;
+  std::cout << socket << std::endl;
+  socket.send("Hola soy tu real server gaaaa");
+  socket.receive(msg);
+  std::cout << "==========MENSAJE: " << msg << std::endl;
   std::cout << "+-+-+-++-+-+RECV 1\n";
   socket.receive(msg);
   std::cout << "==========MENSAJE: " << msg << std::endl;
   std::cout << "+-+-+-++-+-+SEND 1\n";
   socket.send("AEA MANO");
   std::cout << "+-+-+-++-+-+SEND 2\n";
-  //socket.receive(msg);//COMENTA ESTO PARA PROVOCAR EL BUG x2
+  socket.receive(msg);
+  std::cout << "==========MENSAJE: " << msg << std::endl;
+  std::cout << "+-+-+-++-+-+RECV 2\n";
   socket.send("RAAAA moment");
+  socket.receive(msg);
+  std::cout << "==========MENSAJE: " << msg << std::endl;
   std::cout << "+-+-+-+PROCEED TO DISCONNECT\n";
   socket.passiveDisconnect();
   /*net::UdpSocket slaveServerSocket("35.188.208.43", "8000");
