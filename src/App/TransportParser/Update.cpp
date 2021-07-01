@@ -1,28 +1,45 @@
 #include "App/TransportParser/Update.hpp"
 
-namespace msg{
+namespace msg
+{
 
-  void UpdateNodePacket::clear(){
+  void UpdateNodePacket::clear()
+  {
     nodeId = newNodeValue = attrName = attrValue = "";
     updateMode = Mode::None;
   }
 
-  UpdateNodePacket& operator<<(UpdateNodePacket& packet, const std::string& message) {
+  UpdateNodePacket &operator<<(UpdateNodePacket &packet, const std::string &message)
+  {
     packet.clear();
-    if(message.length() && message[0] != 'u'){
+
+    if (message.length() && message[0] != 'u')
+    {
       tool::ConsolePrint("[Error]: Incorrect key header.", RED);
       exit(EXIT_FAILURE);
     }
+
     std::string content = message.substr(1);
+
     packet.updateMode = static_cast<UpdateNodePacket::Mode>(tool::asStreamNumeric(content, 1));
+
     packet.nodeId = tool::asStreamString(content, 2);
-    packet.newNodeValue = tool::asStreamString(content, 2);
-    packet.attrName = tool::asStreamString(content, 3);
-    packet.attrValue = tool::asStreamString(content, 3);
+
+    //*CUANDO ES CERO SIGNIFICA QUE ESTAMOS MODIFICANDO LOS ATRIBUTOS
+    if (packet.updateMode == UpdateNodePacket::Mode::Object)
+    {
+      packet.attrName = tool::asStreamString(content, 3);
+      packet.attrValue = tool::asStreamString(content, 3);
+    }
+    else if (packet.updateMode == UpdateNodePacket::Mode::Attribute)
+    {
+      packet.newNodeValue = tool::asStreamString(content, 2);
+    }
     return packet;
   }
 
-  UpdateNodePacket& operator>>(UpdateNodePacket& packet, std::string& message) {
+  UpdateNodePacket &operator>>(UpdateNodePacket &packet, std::string &message)
+  {
     message.clear();
     message += "u";
     message += std::to_string(packet.updateMode);
@@ -37,13 +54,14 @@ namespace msg{
     return packet;
   }
 
-  UpdateNodePacket& operator<<(UpdateNodePacket& packet, std::map<std::string, std::string>& settings){
+  UpdateNodePacket &operator<<(UpdateNodePacket &packet, std::map<std::string, std::string> &settings)
+  {
     packet.clear();
     packet.nodeId = settings[CENAPSE_CODE_NODE_NAME];
     std::string updateType = settings[CENAPSE_CODE_NA_MODE];
-    if(updateType == CENAPSE_CODE_NODE_OP)
+    if (updateType == CENAPSE_CODE_NODE_OP)
       packet.updateMode = UpdateNodePacket::Mode::Object;
-    else if(updateType == CENAPSE_CODE_ATRIBUTE_OP)
+    else if (updateType == CENAPSE_CODE_ATRIBUTE_OP)
       packet.updateMode = UpdateNodePacket::Mode::Attribute;
     else
       packet.updateMode = UpdateNodePacket::Mode::None;

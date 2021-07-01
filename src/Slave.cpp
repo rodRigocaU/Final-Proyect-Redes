@@ -3,11 +3,13 @@
 #include "DataBase/Sqlite.hpp"
 #include "Network/Algorithm/RDTEstimator.hpp"
 
-int main() {
+int main()
+{
   //TESTING ESTIMATOR
   rdt::RTTEstimator ewmaEstimator;
   std::cout << ewmaEstimator.estimate() << std::endl;
-  for(int i = 0; i < 20; ++i){
+  for (int i = 0; i < 20; ++i)
+  {
     int val = rand() % 500 + 1;
     std::cout << "Current time out: " << val << std::endl;
     std::cout << "EWMA time out: " << ewmaEstimator.estimate(val) << std::endl;
@@ -23,34 +25,51 @@ int main() {
       
   */
 
+  //*Probar la BD
+  //C
   /*
-  rdt::RDTSocket slaveServerSocket;
-  slaveServerSocket.setReceptorSettings("", 8000);
-  std::string received_comand, remoteIp;
-  uint16_t remotePort;
-
-  db::SQLite BD;
-  BD.createTables();
-  
-  slaveServerSocket.receive(received_comand, remoteIp, remotePort);
-  std::cout << received_comand << " " << remoteIp << " " << remotePort << '\n';
-
-  std::string nodeName;
-  std::vector<std::pair<std::string, std::string>> attributes;
-
+  std::string received_comand = "c005Julio02001004EDAD00233009profesion010pprofesorr004Nodo";
   msg::CreateNodePacket c;
   c << received_comand;
-  std::cout << c.nodeId << '\n';
+  */
 
-  for (auto atr : c.attributes)
-    attributes.push_back(atr);
+  //R (Incompleto)
+  /*
   
+  // std::string received_comand = "r05Julio101102004EDAD0002330009profesion3008profesor0"; //True
+  // std::string received_comand = "r05Julio101402004EDAD0002340009profesion3008profesor0";
+  std::string received_comand = "r05Julio110100";
+  msg::ReadNodePacket r;
+  r << received_comand;
+  BD.Read(r.nodeId,r.depth,r.nodeType,r.attribsReq,r.features);
+  */
 
+  //U
+  /*
+  // std::string received_comandU = "U106Carlos06Karlos";  // ? Update only Nodo
+  std::string received_comandU = "U006Carlos009apellidos005Grace ";  // ? Update only Nodo
+  msg::UpdateNodePacket U;
+  U << received_comandU;
+  if (U.updateMode == msg::UpdateNodePacket::Mode::Object)
+    BD.UpdateValueNodo(U.nodeId,U.newNodeValue);
+  else
+    BD.UpdateAttribute(U.nodeId,U.attrName,U.attrValue);
+  */
 
-  BD.Create(c.nodeId,attributes,c.relations);
-  BD.printSelectNodos();
-  BD.printSelectAttributes();
-  BD.printSelectRelations();
-*/
+  //D
+  /*
+  std::string received_comandD = "D005Julio";  // ? Eliminación de nodo
+  // std::string received_comandD = "D105Julio015GradoAcademicos ";  // ? Eliminación de un atributo del nodo
+  // std::string received_comandD = "D205Julio017RelacionAcademico ";  // ? Eliminación de una relación del nodo:
+  msg::DeleteNodePacket D;
+  D << received_comandD;
+  if (D.deleteMode == msg::DeleteNodePacket::Mode::Object)
+    BD.DropNode(D.nodeId);
+  else if (D.deleteMode == msg::DeleteNodePacket::Mode::Attribute)
+    BD.DropValueAttribute(D.nodeId,D.targetName);
+  else //*Relation
+    BD.DropRelation(D.nodeId,D.targetName);
+  */
+
   return 0;
 }
