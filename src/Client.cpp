@@ -1,6 +1,4 @@
-#include <iostream>
-#include "App/App.hpp"
-#include "Network/RDTSocket.hpp"
+#include "App/Client/ClientInterface.hpp"
 
 int main(int argc, char *argv[]) {
   std::map<std::string, std::string> requirements = {{"ServerMasterIp",""},{"ServerMasterPort",""}};
@@ -16,3 +14,4 @@ int main(int argc, char *argv[]) {
   }
   return EXIT_SUCCESS;
 }
+

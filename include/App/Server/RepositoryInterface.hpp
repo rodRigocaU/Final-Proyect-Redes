@@ -16,6 +16,7 @@ namespace app{
 
     std::vector<std::shared_ptr<rdt::RDTSocket>> neighbours;
     rdt::RDTSocket masterServerSocket;
+    rdt::RDTListener unknownListener;
   public:
     RepositoryServer(const std::string& serverMasterIp, const uint16_t& serverMasterPort);
     ~RepositoryServer();

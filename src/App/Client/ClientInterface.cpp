@@ -1,7 +1,4 @@
 #include "App/Client/ClientInterface.hpp"
-#include "App/Tools/Colors.hpp"
-#include "App/Tools/Fixer.hpp"
-#include "App/Tools/InterfacePerformance.hpp"
 #include "App/TransportParser/Client0MainServerParser.hpp"
 
 namespace app{
