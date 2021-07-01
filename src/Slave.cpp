@@ -10,7 +10,7 @@ int main() {
   for(int i = 0; i < 20; ++i){
     int val = rand() % 500 + 1;
     std::cout << "Current time out: " << val << std::endl;
-    std::cout << "EWMA: " << ewmaEstimator.estimate(val) << std::endl;
+    std::cout << "EWMA time out: " << ewmaEstimator.estimate(val) << std::endl;
   }
 
   /*
@@ -19,7 +19,8 @@ int main() {
       MASTER -IpPort as Listener Port-> SAVE
       REPO -Change ID -> MASTER
       REPO -AskToConnectWithOtherRepos-> MASTER
-      MASTER -Send Multicast-> REPO'S
+      MASTER -Send ID Repo-> REPOSGROUP
+      
   */
 
   /*

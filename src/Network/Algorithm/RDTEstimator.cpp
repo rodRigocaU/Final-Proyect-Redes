@@ -1,22 +1,22 @@
 #include "Network/Algorithm/RDTEstimator.hpp"
+#include <algorithm>
 #include <math.h>
 
 /*
   Link: https://en.wikipedia.org/wiki/Moving_average
-  alpha <0,1>
+  alpha [0.8, 0.9]
 */
 
 rdt::RTTEstimator::RTTEstimator() {
-  weightedSum = weightedCount = 0.0;
-  alpha = 0.25;
+  lastEstimated = 0.0;
+  alpha = 0.85;
 }
 
-double rdt::RTTEstimator::EWMA(const double& serieValue, const double& lastEWMA){
-  return serieValue + (1 - alpha) * lastEWMA;
+double rdt::RTTEstimator::EWMA(const double& sample, const double& lastEWMA){
+  return alpha * lastEWMA + (1 - alpha) * sample;
 }
 
 uint32_t rdt::RTTEstimator::estimate(const double& currentRTT){
-  weightedSum = EWMA(currentRTT, weightedSum);                    
-  weightedCount = EWMA(1.0, weightedCount);                       
-  return static_cast<uint32_t>(std::round(weightedSum / weightedCount));
+  lastEstimated = EWMA(currentRTT, lastEstimated);
+  return static_cast<uint32_t>(std::round(lastEstimated) * 2);
 }

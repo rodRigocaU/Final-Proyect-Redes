@@ -3,13 +3,13 @@
 
 #include <iostream>
 
-#define DEFAULT_RTT_VALUE 200
+#define DEFAULT_RTT_VALUE   200
 
 namespace rdt{
 
   class RTTEstimator{
   private:
-    double weightedSum, weightedCount, alpha;
+    double lastEstimated, alpha;
     double EWMA(const double& serieValue, const double& lastEWMA);
   public:
     RTTEstimator();

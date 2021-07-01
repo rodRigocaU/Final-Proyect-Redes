@@ -15,7 +15,7 @@ namespace app{
   class ServerMaster {
   private:
     rdt::RDTListener listener;
-    std::vector<std::shared_ptr<rdt::RDTSocket>> repositoryPool;
+    std::map<int32_t, std::shared_ptr<rdt::RDTSocket>> repositoryPool;
     std::map<int32_t, std::shared_ptr<rdt::RDTSocket>> clientConnectionPool;
   public:
     ServerMaster(const uint16_t& listenerPort);
