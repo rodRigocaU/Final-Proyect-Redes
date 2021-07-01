@@ -1,6 +1,8 @@
+#include "App/Tools/Fixer.hpp"
 #include "Network/RDTSocket.hpp"
 #include "Network/Algorithm/sha256.hpp"
-#include "App/Tools/Fixer.hpp"
+#include "Network/Algorithm/RDTEstimator.hpp"
+#include <chrono>
 #include <iomanip>
 #include <math.h>
 
@@ -117,12 +119,18 @@ net::Status rdt::RDTSocket::secureSend(std::string& packet) {
     uint16_t remotePort;
     bool successSending = false;
 
-    uint32_t timeOut = 200; // TO DO: Función para calcular el RTT
+    std::chrono::high_resolution_clock::time_point t_pollStart, t_pollEnd;
+    RTTEstimator ewmaEstimator;
+    uint32_t estimatedRTT = ewmaEstimator.estimate(); // TO DO: Función para calcular el RTT
     while(!successSending){
       if(mainSocket->send(packet, connectionInfo.remoteIp, connectionInfo.remotePort) != net::Status::Done){
         return net::Status::Error;
       }
-      int32_t responseTimeCode = poll(sPool, 1, timeOut);
+      t_pollStart = std::chrono::high_resolution_clock::now();
+      int32_t responseTimeCode = poll(sPool, 1, estimatedRTT);
+      t_pollEnd = std::chrono::high_resolution_clock::now();
+      estimatedRTT = ewmaEstimator.estimate(std::chrono::duration_cast<std::chrono::milliseconds>(t_pollEnd - t_pollStart).count());
+
       if(responseTimeCode == ERROR_TIMER){
         return net::Status::Error;
       }

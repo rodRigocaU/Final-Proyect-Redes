@@ -1,9 +1,27 @@
 #include "Network/RDTSocket.hpp"
 #include "App/TransportParser/Client0MainServerParser.hpp"
 #include "DataBase/Sqlite.hpp"
+#include "Network/Algorithm/RDTEstimator.hpp"
 
-int main()
-{
+int main() {
+  //TESTING ESTIMATOR
+  rdt::RTTEstimator ewmaEstimator;
+  std::cout << ewmaEstimator.estimate() << std::endl;
+  for(int i = 0; i < 20; ++i){
+    int val = rand() % 500 + 1;
+    std::cout << "Current time out: " << val << std::endl;
+    std::cout << "EWMA: " << ewmaEstimator.estimate(val) << std::endl;
+  }
+
+  /*
+    IDEA: 
+      REPO -Conn-> MASTER
+      MASTER -IpPort as Listener Port-> SAVE
+      REPO -Change ID -> MASTER
+      REPO -AskToConnectWithOtherRepos-> MASTER
+      MASTER -Send Multicast-> REPO'S
+  */
+
   /*
   rdt::RDTSocket slaveServerSocket;
   slaveServerSocket.setReceptorSettings("", 8000);
@@ -33,5 +51,5 @@ int main()
   BD.printSelectAttributes();
   BD.printSelectRelations();
 */
-return 0;
+  return 0;
 }
