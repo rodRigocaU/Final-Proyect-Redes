@@ -3,18 +3,13 @@
 #include "DataBase/Sqlite.hpp"
 #include "Network/Algorithm/RDTEstimator.hpp"
 
-int main()
-{
-  //TESTING ESTIMATOR
-  rdt::RTTEstimator ewmaEstimator;
-  std::cout << ewmaEstimator.estimate() << std::endl;
-  for (int i = 0; i < 20; ++i)
-  {
-    int val = rand() % 500 + 1;
-    std::cout << "Current time out: " << val << std::endl;
-    std::cout << "EWMA time out: " << ewmaEstimator.estimate(val) << std::endl;
+int main() {
+  //TESTING SETTINGS PARSER
+  std::map<std::string, std::string> requirements = {{"DataBase",""},{"ServerMasterPort",""},{"RepositoryServerIp",""}};
+  tool::readSettingsFile("Cenapse.conf", requirements, true);
+  for(auto& item : requirements){
+    std::cout << item.first << '=' << item.second << std::endl;
   }
-
   /*
     IDEA: 
       REPO -Conn-> MASTER

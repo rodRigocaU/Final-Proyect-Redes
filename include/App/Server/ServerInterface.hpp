@@ -4,7 +4,6 @@
 #include <iostream>
 #include <map>
 #include <memory>
-#include <thread>
 #include <vector>
 
 #include "../../Network/RDTSocket.hpp"
@@ -14,11 +13,19 @@ namespace app{
 
   class ServerMaster {
   private:
-    rdt::RDTListener listener;
-    std::map<int32_t, std::shared_ptr<rdt::RDTSocket>> repositoryPool;
-    std::map<int32_t, std::shared_ptr<rdt::RDTSocket>> clientConnectionPool;
+    typedef uint64_t IdNetNode;
+    typedef int32_t FileDescriptor;
+
+    rdt::RDTListener clientListener, repositoryListener;
+    std::map<IdNetNode, std::shared_ptr<rdt::RDTSocket>> repositoryConnectionPool;
+    std::map<FileDescriptor, std::shared_ptr<rdt::RDTSocket>> clientConnectionPool;
+
+    void connEnvironmentClient(std::shared_ptr<rdt::RDTSocket>& socket);
+    void connEnvironmentRepository(std::shared_ptr<rdt::RDTSocket>& socket);
+
+    void runRepositoryListener();
   public:
-    ServerMaster(const uint16_t& listenerPort);
+    ServerMaster(const uint16_t& listenerPortClient, const uint16_t& listenerPortRepository);
     void run();
   };
 

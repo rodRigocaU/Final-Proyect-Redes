@@ -27,6 +27,9 @@ file(GLOB SLAVE_SOURCE_FILES
   "src/DataBase/*.cpp"
 )
 
+file(GLOB CONFIG_FILES "${CMAKE_CURRENT_SOURCE_DIR}/settings/Cenapse.conf")
+file(COPY ${CONFIG_FILES} DESTINATION ${CMAKE_BINARY_DIR})
+
 add_executable(CClient src/Client.cpp ${SOURCE_FILES})
 add_executable(CServer src/MainServer.cpp ${SOURCE_FILES})
 add_executable(CSlave src/Slave.cpp ${SOURCE_FILES} ${SLAVE_SOURCE_FILES})

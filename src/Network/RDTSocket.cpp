@@ -234,6 +234,10 @@ net::Status rdt::RDTSocket::receive(std::string& message){
   return net::Status::Done;
 }
 
+bool rdt::RDTSocket::online(){
+  return (mainSocket != nullptr) && (connectionStatus == net::Connected);
+}
+
 void rdt::RDTSocket::disconnectInitializer(){
   RDTPacket packer;
   std::string finalizerPacket = packer.encode("", alterBit, RDTPacket::Type::Finalizer);
