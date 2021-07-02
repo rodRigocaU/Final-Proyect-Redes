@@ -37,7 +37,11 @@ namespace app{
       packet << settings;
       packet >> message;
     }
+<<<<<<< HEAD
     clientSocket.send(message);
+=======
+    remoteSocket.send(message);
+>>>>>>> 8a9ce7b33de0d02a90953e083d181088810e3d53
     return true;
   }
 
@@ -55,7 +59,11 @@ namespace app{
       packet << settings;
       packet >> message;
     }
+<<<<<<< HEAD
     clientSocket.send(message);
+=======
+    remoteSocket.send(message);
+>>>>>>> 8a9ce7b33de0d02a90953e083d181088810e3d53
     return true;
   }
 
@@ -72,7 +80,11 @@ namespace app{
       packet << settings;
       packet >> message;
     }
+<<<<<<< HEAD
     clientSocket.send(message);
+=======
+    remoteSocket.send(message);
+>>>>>>> 8a9ce7b33de0d02a90953e083d181088810e3d53
     return true;
   }
 

@@ -1,6 +1,5 @@
 #ifndef UDP_SOCKET_HPP_
 #define UDP_SOCKET_HPP_
-
 #include <iostream>
 #include <string>
 

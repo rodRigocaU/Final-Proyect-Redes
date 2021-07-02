@@ -29,8 +29,8 @@ int main() {
   std::string received_comand, remoteIp;
   uint16_t remotePort;
 
-  db::SQLite BD;
-  BD.createTables();
+  // db::SQLite BD;
+  // BD.createTables();
   
   slaveServerSocket.receive(received_comand, remoteIp, remotePort);
   std::cout << received_comand << " " << remoteIp << " " << remotePort << '\n';
@@ -38,12 +38,12 @@ int main() {
   std::string nodeName;
   std::vector<std::pair<std::string, std::string>> attributes;
 
-  msg::CreateNodePacket c;
-  c << received_comand;
-  std::cout << c.nodeId << '\n';
+  // msg::CreateNodePacket c;
+  // c << received_comand;
+  // std::cout << c.nodeId << '\n';
 
-  for (auto atr : c.attributes)
-    attributes.push_back(atr);
+  // for (auto atr : c.attributes)
+  //   attributes.push_back(atr);
   
 
 
