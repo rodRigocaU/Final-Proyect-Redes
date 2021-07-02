@@ -120,8 +120,7 @@ net::Status rdt::RDTSocket::secureSend(std::string& packet) {
     bool successSending = false;
 
     std::chrono::high_resolution_clock::time_point t_pollStart, t_pollEnd;
-    RTTEstimator ewmaEstimator;
-    uint32_t estimatedRTT = ewmaEstimator.estimate(); // TO DO: Función para calcular el RTT
+    uint32_t estimatedRTT;
     while(!successSending){
       if(mainSocket->send(packet, connectionInfo.remoteIp, connectionInfo.remotePort) != net::Status::Done){
         return net::Status::Error;
@@ -131,7 +130,7 @@ net::Status rdt::RDTSocket::secureSend(std::string& packet) {
       t_pollEnd = std::chrono::high_resolution_clock::now();
       estimatedRTT = ewmaEstimator.estimate(std::chrono::duration_cast<std::chrono::milliseconds>(t_pollEnd - t_pollStart).count());
 
-      if(responseTimeCode == ERROR_TIMER){
+      if(responseTimeCode == ERROR_TIMER) {
         return net::Status::Error;
       }
       else if(responseTimeCode == TIMEOUT)

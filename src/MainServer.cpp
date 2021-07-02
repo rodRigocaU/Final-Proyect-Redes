@@ -7,7 +7,7 @@ int main(){
   if(listener.listen(5001) != net::Status::Done){
     return EXIT_FAILURE;
   }
-  std::cout << listener << std::endl;
+  
   rdt::RDTSocket socket;
   if(listener.accept(socket) != net::Status::Done){
     return EXIT_FAILURE;
@@ -15,23 +15,25 @@ int main(){
   
   std::string msg;
   std::cout << socket << std::endl;
-  socket.send("Hola soy tu real server gaaaa");
+  socket.send("hola soy tu servidor");
   socket.receive(msg);
   std::cout << "==========MENSAJE: " << msg << std::endl;
   std::cout << "+-+-+-++-+-+RECV 1\n";
   socket.receive(msg);
   std::cout << "==========MENSAJE: " << msg << std::endl;
   std::cout << "+-+-+-++-+-+SEND 1\n";
-  socket.send("AEA MANO");
+  socket.send("Te escuche");
   std::cout << "+-+-+-++-+-+SEND 2\n";
   socket.receive(msg);
   std::cout << "==========MENSAJE: " << msg << std::endl;
   std::cout << "+-+-+-++-+-+RECV 2\n";
-  socket.send("RAAAA moment");
+  socket.send(msg); // devolvemos el mensaje
   socket.receive(msg);
   std::cout << "==========MENSAJE: " << msg << std::endl;
   std::cout << "+-+-+-+PROCEED TO DISCONNECT\n";
-  socket.passiveDisconnect();
+  socket.passiveDisconnect();// recibimos la desconexión del cliente
+ 
+ 
   /*net::UdpSocket slaveServerSocket("35.188.208.43", "8000");
 
   std::string received_message, IP_from;

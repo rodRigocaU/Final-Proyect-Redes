@@ -6,6 +6,7 @@
 #include <sys/poll.h>
 
 #include "UdpSocket.hpp"
+#include "Algorithm/RDTEstimator.hpp"
 
 #define HASH_BYTE_SIZE            64
 #define PACKET_TYPE_BYTE_SIZE     1
@@ -60,6 +61,8 @@ namespace rdt {
     Connection connectionInfo;
     net::Status connectionStatus;
     RDTPacket::Type restrictedPacketType;
+    RTTEstimator ewmaEstimator;
+    
 
     uint16_t switchBitAlternate();
 
