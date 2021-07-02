@@ -17,23 +17,16 @@ int main(int argc, char *argv[]) {
   if(socket.connect("34.94.147.12", 5001) != net::Status::Done){
     return EXIT_FAILURE;
   }
-  std::cout << socket << std::endl;
-  std::string msg;
-  socket.receive(msg);
-  std::cout << "==========MENSAJE: " << msg << std::endl;
-  socket.send("SOY GUAPO LO SE");
-  std::cout << "==========MENSAJE: " << msg << std::endl;
-  std::cout << "+-+-+-++-+-+SEND 1\n";
-  socket.send("hectiris@gmail.com");
-  std::cout << "+-+-+-++-+-+RECV 1\n";
-  socket.receive(msg);
-  std::cout << "==========MENSAJE: " << msg << std::endl;
-  std::cout << "+-+-+-++-+-+RECV 2\n";
-  socket.send("Hola como te va");
-  socket.receive(msg);
-  std::cout << "==========MENSAJE: " << msg << std::endl;
-  socket.send("Bueno ya me voy");
-  std::cout << "++++PROCEED TO DISCONNECT\n";
+  
+  std::cout << socket;
+
+  while(true){
+    std::string msg;
+    std::cout << "Ingresa un mensaje al server: ";
+    std::getline(std::cin, msg);
+    socket.send(msg);
+  }
+
   socket.disconnectInitializer();
   return EXIT_SUCCESS;
 }
