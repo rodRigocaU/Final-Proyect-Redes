@@ -10,7 +10,7 @@ app::RepositoryServer::RepositoryServer(const std::string& serverMasterIp, const
 }
 
 app::RepositoryServer::~RepositoryServer(){
-
+  unknownListener.close();
 }
 
 void app::RepositoryServer::run(){
