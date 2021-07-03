@@ -22,21 +22,28 @@ namespace db
     {
     private:
         std::string nameDatabase;
-        // descriptor database
-        sqlite3 *DB;
-        int exit;
-
+        sqlite3 *DB; // descriptor database
+        bool printError;
         char *MsgError;
-        int rc;
-
-        bool printRecord = true;
+        int rc; //Status Query
         std::string sql;
 
     public:
-        bool printError = true;
-
-        SQLite(const std::string &nameDatabase = "GraphNetwork.db");
+        SQLite(bool printError = false);
         void createTables();
+
+        void existDataBase();
+        bool existNodo(std::string name_node, std::string &id_Node);
+        void closeDB();
+        void cleanDB(bool wantNode = true, bool wantAttributes = true, bool wantRelations = true);
+        //foreign_keys -> Constraint Support
+        void ConstraintForeign();
+        void writeComandSQL();
+
+        void printSelectNodos();
+        void printSelectRelations();
+        void printSelectAttributes();
+
         //CRUD
         //C
         void Create(msg::CreateNodePacket &packetCreate);
@@ -55,24 +62,9 @@ namespace db
 
         //D
         void Delete(msg::DeleteNodePacket &packetDelete);
-        void DeleteNode(std::string &query_value_node);
-        void DeleteValueAttribute(std::string &query_value_node, std::string &query_value_attribute);
-        void DeleteRelation(std::string &query_value_node, std::string &query_Relation);
-
-        void existDataBase();
-        // bool exsitNodo(std::string name_node);
-        bool exsitNodo(std::string name_node, std::string id_Node = "0");
-        bool exsitNodo2(std::string name_node, std::string &id_Node);
-        void closeDB();
-        void cleanDB(bool wantNode = true, bool wantAttributes = true, bool wantRelations = true);
-
-        // Print Select
-        void printSelectNodos();
-        void printSelectRelations();
-        void printSelectAttributes();
-
-        //foreign_keys -> Constraint Support
-        void ConstraintForeign();
+        void DeleteNode(std::string &value_node);
+        void DeleteValueAttribute(std::string &value_node, std::string &name_attribute);
+        void DeleteRelation(std::string &value_node, std::string &value_node_Relation);
     };
 
 }
