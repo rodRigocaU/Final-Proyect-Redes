@@ -2,8 +2,10 @@
 
 int main(int argc, char *argv[]) {
   std::map<std::string, std::string> requirements = {{"ServerMasterIp",""},{"ServerMasterPort",""}};
-  if(!tool::readSettingsFile("Cenapse.conf", requirements, true))
+  if(!tool::readSettingsFile("Cenapse.conf", requirements, true)){
     tool::ConsolePrint("[Error]: Requirements missed.", RED);
+    return EXIT_FAILURE;
+  }
   app::Client clientInstance(requirements["ServerMasterIp"], requirements["ServerMasterPort"]);
 
   if(argc > 1) {
