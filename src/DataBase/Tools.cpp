@@ -18,7 +18,6 @@ namespace tool
         }
         catch (...)
         {
-            // abort select on failure, don't let exception propogate thru sqlite3 call-stack
             return 1;
         }
         return 0;
