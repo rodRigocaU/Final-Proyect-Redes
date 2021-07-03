@@ -1,6 +1,10 @@
 #include "DataBase/Sqlite.hpp"
 // #include "DataBase/Tools.hpp"
 
+//!delete
+#include <stdio.h>
+#include <stdlib.h>
+
 namespace db
 {
 
@@ -12,16 +16,13 @@ namespace db
     void SQLite::createTables()
     {
         existDataBase();
+        // sql = "PRAGMA foreign_keys = ON;";
 
-        sql = "CREATE TABLE Nodo ("
-              " name_nodo CHAR(255) NOT NULL);"
-              "CREATE TABLE Attribute ("
-              "idAttribute CHAR(255) NOT NULL,"
-              " name_attribute CHAR(255) NOT NULL,"
-              "value_attribute CHAR(255) NOT NULL);"
-              "CREATE TABLE Relation ("
-              "Nodo_name_start CHAR(255) NOT NULL,"
-              "Nodo_name_end CHAR(255) NOT NULL);";
+        sql = "CREATE TABLE Nodo ( id_Nodo INTEGER PRIMARY KEY AUTOINCREMENT,name_nodo CHAR(255) NOT NULL);";
+
+        sql += "CREATE TABLE Attribute (name_attribute CHAR(255) NOT NULL, value_attribute CHAR(255) NOT NULL, idAttribute INTEGER, FOREIGN KEY (idAttribute) REFERENCES Nodo (id_Nodo) ON UPDATE CASCADE ON DELETE CASCADE );";
+
+        sql += " CREATE TABLE Relation ( Nodo_name_start INTEGER, Nodo_name_end INTEGER, FOREIGN KEY (Nodo_name_start) REFERENCES Nodo (id_Nodo)  ON UPDATE CASCADE ON DELETE CASCADE,FOREIGN KEY (Nodo_name_end) REFERENCES Nodo (id_Nodo) ON UPDATE CASCADE ON DELETE CASCADE );";
 
         // rc = sqlite3_exec(DB, sql.c_str(), callback, 0, &MsgError);
         rc = sqlite3_exec(DB, sql.c_str(), NULL, 0, &MsgError);
@@ -44,89 +45,80 @@ namespace db
 
     void SQLite::Create(msg::CreateNodePacket &packetCreate)
     {
-
-        if (!exsitNodo(packetCreate.nodeId))
+        std::string idNode;
+        if (!exsitNodo2(packetCreate.nodeId, idNode))
         {
-            CreateNodo(packetCreate.nodeId);
+            CreateNodo(packetCreate.nodeId, idNode);
             if (packetCreate.attributes.size() > 0)
-                CreateAttributes(packetCreate.nodeId, packetCreate.attributes);
+                CreateAttributes(idNode, packetCreate.attributes);
 
             if (packetCreate.relations.size() > 0)
-                CreateRelations(packetCreate.nodeId, packetCreate.relations);
+                CreateRelations(idNode, packetCreate.relations);
         }
 
-        else
+        else if (printError)
             std::cout << "Imposible Create, there is Nodo with value/name of " + packetCreate.nodeId << std::endl;
     }
 
-    void SQLite::CreateNodo(std::string &name_node)
+    void SQLite::CreateNodo(std::string &name_node, std::string &idNode)
     {
+        std::string notUse;
 
-        if (!exsitNodo(name_node))
+        sql = "INSERT INTO Nodo (name_nodo) "
+              "VALUES ('" +
+              name_node + "')";
+
+        existDataBase();
+        rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
+
+        if (printError)
         {
-            sql = "INSERT INTO Nodo (name_nodo) "
-                  "VALUES ('" +
-                  name_node + "')";
+            if (rc != SQLITE_OK)
+            {
+                tool::printMsgError(MsgError);
+                std::cout << "  Error in Create Nodo :" << std::endl;
+            }
+            else
+                std::cout << "Records of Nodo with name/value [" + name_node + "] created successfully" << std::endl;
+        }
+
+        exsitNodo2(name_node, idNode);
+        closeDB();
+    }
+
+    void SQLite::CreateAttributes(std::string &idNode, std::map<std::string, std::string> &attributes)
+    {
+        for (auto &[name_attribute, value_attribute] : attributes)
+        {
+            sql = "INSERT INTO Attribute (idAttribute,name_attribute,value_attribute) "
+                  "VALUES ( " +
+                  idNode + " , '" + name_attribute + "' , '" + value_attribute + "' );";
+
+            std::cout << sql << std::endl;
 
             existDataBase();
             rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
 
             if (printError)
             {
+                std::string attribute = "[ Name Attribute: " + name_attribute + " , Value Attribute: " + value_attribute + "]";
                 if (rc != SQLITE_OK)
                 {
                     tool::printMsgError(MsgError);
-                    std::cout << "  Error in Create Nodo :" << std::endl;
+                    std::cout << "  Error in create Attribute " + attribute << std::endl;
                 }
                 else
-                    std::cout << "Records of Nodo with name/value [" + name_node + "] created successfully" << std::endl;
+                    std::cout << "Records Attribute " + attribute + " created successfully" << std::endl;
             }
         }
-
         closeDB();
     }
 
-    void SQLite::CreateAttributes(std::string &name_node, std::map<std::string, std::string> &attributes)
-    {
-        if (exsitNodo(name_node))
-        {
-
-            for (auto &[name_attribute, value_attribute] : attributes)
-            {
-                sql = "INSERT INTO Attribute (idAttribute,name_attribute,value_attribute) "
-                      "VALUES ('" +
-                      name_node + "','" + name_attribute + "','" + value_attribute + "');";
-
-                existDataBase();
-                rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
-
-                if (printError)
-                {
-                    std::string attribute = "[ Name Attribute: " + name_attribute + " , Value Attribute: " + value_attribute + "]";
-                    if (rc != SQLITE_OK)
-                    {
-                        tool::printMsgError(MsgError);
-                        std::cout << "  Error in create Attribute " + attribute << std::endl;
-                    }
-                    else
-                        std::cout << "Records Attribute " + attribute + " created successfully" << std::endl;
-                }
-            }
-        }
-
-        else if (printError)
-        {
-            std::cout << "For Attributes Insertion none Node exist with name of [ " + name_node + " ]" << std::endl;
-        }
-
-        closeDB();
-    }
-
-    void SQLite::CreateRelation(std::string &name_node_start, std::string &name_node_end)
+    void SQLite::CreateRelation(std::string &id_node_start, std::string &id_node_end)
     {
         sql = "INSERT INTO Relation (Nodo_name_start,Nodo_name_end) "
-              "VALUES ('" +
-              name_node_start + "','" + name_node_end + "');";
+              "VALUES (" +
+              id_node_start + "," + id_node_end + ");";
 
         existDataBase();
 
@@ -134,27 +126,26 @@ namespace db
 
         if (printError)
         {
-            std::string relation = " [ Nodo Start :" + name_node_start + " ,  Nodo End :" + name_node_end + " ] ";
+            std::string relation = " [ Nodo Start :" + id_node_start + " ,  Nodo End :" + id_node_end + " ] ";
             if (rc != SQLITE_OK)
             {
                 tool::printMsgError(MsgError);
                 std::cout << "  Error in create a relation between" + relation << std::endl;
             }
             else
-            {
                 std::cout << "Relation Record between" + relation + "created successfully" << std::endl;
-            }
         }
 
         closeDB();
     }
 
-    void SQLite::CreateRelations(std::string &name_node_start, std::vector<std::string> &nodes_relations)
+    void SQLite::CreateRelations(std::string &idNode, std::vector<std::string> &nodes_relations)
     {
+        std::string idNode_R;
         for (auto &node_r : nodes_relations)
         {
-            CreateNodo(node_r);
-            CreateRelation(name_node_start, node_r);
+            CreateNodo(node_r, idNode_R);
+            CreateRelation(idNode, idNode_R);
         }
     }
 
@@ -270,30 +261,31 @@ namespace db
     }
 
     // ----------------U:Updates-------------------------
-    void SQLite::Update(msg::UpdateNodePacket &packetCreate)
+    void SQLite::Update(msg::UpdateNodePacket &packetUpdate)
     {
-        if (packetCreate.updateMode == msg::UpdateNodePacket::Mode::Object)
-            UpdateValueNodo(packetCreate.nodeId, packetCreate.newNodeValue);
+        if (packetUpdate.updateMode == msg::UpdateNodePacket::Mode::Object)
+            UpdateValueNodo(packetUpdate.nodeId, packetUpdate.newNodeValue);
         else // Mode::Attribute
-            UpdateAttribute(packetCreate.nodeId, packetCreate.attrName, packetCreate.attrValue);
+            UpdateAttribute(packetUpdate.nodeId, packetUpdate.attrName, packetUpdate.attrValue);
     }
 
     void SQLite::UpdateValueNodo(std::string &query_value_node, std::string &set_value_node)
     {
-        if (exsitNodo(query_value_node))
+        std::string idNode_Old;
+        std::string idNode_New;
+        if (exsitNodo2(query_value_node, idNode_Old))
         {
-            if (!exsitNodo(set_value_node))
+            if (!exsitNodo2(set_value_node, idNode_New))
             {
                 existDataBase();
                 const char *data = "Callback function called";
-                std::string setValues = " [ Old value :" + query_value_node + " ,  New value :" + set_value_node + " ] ";
 
-                //Actulizar el value/name del nodo
                 sql = "UPDATE Nodo set name_nodo = '" + set_value_node + "' " + "WHERE name_nodo = '" + query_value_node + "';";
                 rc = sqlite3_exec(DB, sql.c_str(), tool::print_select_callback, (void *)data, &MsgError);
 
                 if (printError)
                 {
+                    std::string setValues = " [ Old value :" + query_value_node + " ,  New value :" + set_value_node + " ] ";
                     if (rc != SQLITE_OK)
                     {
                         tool::printMsgError(MsgError);
@@ -302,53 +294,6 @@ namespace db
                     else
                         std::cout << "Update Successfully of name/value in Nodo Table" + setValues << std::endl;
                 }
-
-                //Actulizar el nombre/value nodo en la Tabla Atributos
-                sql = "UPDATE Attribute set idAttribute = '" + set_value_node + "' " + "WHERE idAttribute = '" + query_value_node + "';";
-                rc = sqlite3_exec(DB, sql.c_str(), tool::print_select_callback, (void *)data, &MsgError);
-
-                if (printError)
-                {
-                    if (rc != SQLITE_OK)
-                    {
-                        tool::printMsgError(MsgError);
-                        std::cout << "  Error in update name/value in Attribute Table " + setValues << std::endl;
-                    }
-                    else
-                        std::cout << "Update Successfully of name/value in Attribute Table" + setValues << std::endl;
-                }
-
-                //Actulizar el nombre/value en la tabla relaciones : Cuando Value/Nodo es nodo origen
-                sql = "UPDATE Relation set Nodo_name_start = '" + set_value_node + "' " + "WHERE Nodo_name_start = '" + query_value_node + "';";
-                rc = sqlite3_exec(DB, sql.c_str(), tool::print_select_callback, (void *)data, &MsgError);
-
-                if (printError)
-                {
-                    if (rc != SQLITE_OK)
-                    {
-                        tool::printMsgError(MsgError);
-                        std::cout << "  Error in update name/value in Relation Table " + setValues << std::endl;
-                    }
-                    else
-                        std::cout << "Update Successfully of name/value in Relation Table" + setValues << std::endl;
-                }
-
-                //Actulizar el nombre/value en la tabla relaciones : Cuando Value/Nodo es nodo fin
-                sql = "UPDATE Relation set Nodo_name_end = '" + set_value_node + "' " + "WHERE Nodo_name_end = '" + query_value_node + "';";
-                rc = sqlite3_exec(DB, sql.c_str(), tool::print_select_callback, (void *)data, &MsgError);
-
-                if (printError)
-                {
-                    if (rc != SQLITE_OK)
-                    {
-                        tool::printMsgError(MsgError);
-                        std::cout << "  Error in update name/value in Relation Table " + setValues << std::endl;
-                    }
-                    else
-                        std::cout << "Update Successfully of name/value in Relation Table" + setValues << std::endl;
-                }
-
-                closeDB();
             }
             else
                 std::cout << "Impossible Update name/value , there is one Nodo with name [" << set_value_node << "]" << std::endl;
@@ -357,15 +302,15 @@ namespace db
 
     void SQLite::UpdateAttribute(std::string &query_value_node, std::string &name_attribute, std::string &value_attribute)
     {
-
-        if (exsitNodo(query_value_node))
+        std::string idNode;
+        if (exsitNodo2(query_value_node, idNode))
         {
             existDataBase();
             const char *data = "Callback function called";
 
             //Actulizar atributo
-            sql = "UPDATE Attribute set value_attribute = '" + value_attribute + "' " + "WHERE idAttribute = '" + query_value_node + "' AND name_attribute = '" + name_attribute + "';";
-            // std::cout << sql << std::endl;
+            sql = "UPDATE Attribute set value_attribute = '" + value_attribute + "' " + "WHERE idAttribute = " + idNode + " AND name_attribute = '" + name_attribute + "';";
+            std::cout << sql << std::endl;
             rc = sqlite3_exec(DB, sql.c_str(), tool::print_select_callback, (void *)data, &MsgError);
 
             if (printError)
@@ -377,8 +322,11 @@ namespace db
                     tool::printMsgError(MsgError);
                     std::cout << "  Error in update Attribute value " + setValue << std::endl;
                 }
-                else
+                else if (sqlite3_changes(DB) == 1)
                     std::cout << "Update Successfully of Attribute value " + setValue << std::endl;
+
+                else
+                    std::cout << "Not Exist Error in SQL but not exist attribute with name  [ " + name_attribute + " ]" << std::endl;
             }
 
             closeDB();
@@ -391,103 +339,67 @@ namespace db
     //-----------------D:Delete Node o Attributes of Node or Relation
     void SQLite::Delete(msg::DeleteNodePacket &packetDelete)
     {
-        if (packetDelete.deleteMode == msg::DeleteNodePacket::Mode::Object)
-            DeleteNode(packetDelete.nodeId);
-        else if (packetDelete.deleteMode == msg::DeleteNodePacket::Mode::Attribute)
-            DeleteValueAttribute(packetDelete.nodeId, packetDelete.targetName);
-        else // Mode::Relation
-            DeleteRelation(packetDelete.nodeId, packetDelete.targetName);
+        std::string idNode;
+        if (exsitNodo2(packetDelete.nodeId, idNode))
+        {
+            if (packetDelete.deleteMode == msg::DeleteNodePacket::Mode::Object)
+                DeleteNode(idNode);
+            else if (packetDelete.deleteMode == msg::DeleteNodePacket::Mode::Attribute)
+                DeleteValueAttribute(idNode, packetDelete.targetName);
+            else // Mode::Relation
+                DeleteRelation(idNode, packetDelete.targetName);
+            closeDB();
+        }
+        else
+            std::cout << "Not exist Nodo with name " + packetDelete.nodeId << std::endl;
     }
 
-    void SQLite::DeleteNode(std::string &query_value_node)
+    void SQLite::DeleteNode(std::string &idNode)
     {
-        if (exsitNodo(query_value_node))
+        existDataBase();
+        ConstraintForeign();
+
+        sql = "DELETE FROM Nodo WHERE id_Nodo = " + idNode + ";";
+        rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
+
+        if (printError)
+        {
+            if (rc != SQLITE_OK)
+            {
+                tool::printMsgError(MsgError);
+                std::cerr << "  Error in Delete Nodo" << std::endl;
+            }
+            else
+                std::cout << "Nodo Record deleted Successfully!" << std::endl;
+        }
+    }
+
+    void SQLite::DeleteValueAttribute(std::string &idNode, std::string &query_value_attribute)
+    {
+        existDataBase();
+        sql = "DELETE FROM Attribute WHERE idAttribute = " + idNode + " AND name_attribute = '" + query_value_attribute + "';";
+
+        rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
+
+        if (printError)
+        {
+            if (rc != SQLITE_OK)
+            {
+                tool::printMsgError(MsgError);
+                std::cerr << "  Error DELETE Attribute" << std::endl;
+            }
+            else
+                std::cout << "Record of Attribute " + query_value_attribute + "in id_Nodo of " + idNode + "deleted Successfully!" << std::endl;
+        }
+    }
+
+    void SQLite::DeleteRelation(std::string &idNode, std::string &query_Relation)
+    {
+        std::string idNode_R;
+        if (exsitNodo2(query_Relation, idNode_R))
         {
             existDataBase();
-
-            sql = "DELETE FROM Nodo WHERE name_nodo = '" + query_value_node + "';";
-
-            rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
-
-            if (printError)
-            {
-                if (rc != SQLITE_OK)
-                {
-                    tool::printMsgError(MsgError);
-                    std::cerr << "  Error in Delete Nodo" << std::endl;
-                }
-                else
-                    std::cout << "Nodo Record deleted Successfully!" << std::endl;
-            }
-
-            sql = "DELETE FROM Attribute "
-                  "WHERE idAttribute = '" +
-                  query_value_node + "';";
-
-            rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
-
-            if (printError)
-            {
-                if (rc != SQLITE_OK)
-                {
-                    tool::printMsgError(MsgError);
-                    std::cerr << "  Error DELETE Attributes of Nodo" << std::endl;
-                }
-                else
-                    std::cout << "Record of Attributes deleted Successfully!" << std::endl;
-            }
-
-            sql = "DELETE FROM Relation "
-                  "WHERE Nodo_name_start = '" +
-                  query_value_node + "' OR Nodo_name_end = '" +
-                  query_value_node + "';";
-
-            rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
-
-            if (printError)
-            {
-                if (rc != SQLITE_OK)
-                {
-                    tool::printMsgError(MsgError);
-                    ;
-                    std::cerr << "  Error DELETE Relation" << std::endl;
-                }
-                else
-                    std::cout << "Record of Relation deleted Successfully!" << std::endl;
-            }
-        }
-
-        closeDB();
-    }
-
-    void SQLite::DeleteValueAttribute(std::string &query_value_node, std::string &query_value_attribute)
-    {
-        if (exsitNodo(query_value_node))
-        {
-            sql = "DELETE FROM Attribute WHERE idAttribute = '" + query_value_node + "' AND name_attribute = '" + query_value_attribute + "';";
-
-            rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
-
-            if (printError)
-            {
-                if (rc != SQLITE_OK)
-                {
-                    tool::printMsgError(MsgError);
-                    std::cerr << "  Error DELETE Attribute" << std::endl;
-                }
-                else
-                    std::cout << "Record of Attribute " + query_value_attribute + "in Nodo" + query_value_node + "deleted Successfully!" << std::endl;
-            }
-        }
-    }
-
-    void SQLite::DeleteRelation(std::string &query_value_node, std::string &query_Relation)
-    {
-
-        if (exsitNodo(query_value_node))
-        {
-            sql = "DELETE FROM Relation WHERE ( Nodo_name_start = '" + query_value_node + "' AND Nodo_name_end = '" + query_Relation + "') OR ( Nodo_name_start = '" + query_Relation + "' AND Nodo_name_end = '" + query_value_node + "');";
-
+            sql = "DELETE FROM Relation WHERE ( Nodo_name_start = " + idNode + " AND Nodo_name_end = " + idNode_R + " ) OR ( Nodo_name_start = " + idNode_R + " AND Nodo_name_end = " + idNode + " );";
             rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
 
             if (printError)
@@ -498,9 +410,11 @@ namespace db
                     std::cerr << "  Error DELETE Relation" << std::endl;
                 }
                 else
-                    std::cout << "Record of Relation between [ " + query_value_node + " and " + query_Relation + "deleted Successfully!" << std::endl;
+                    std::cout << "Record of Relation between [ " + idNode + " and " + idNode_R + "deleted Successfully!" << std::endl;
             }
         }
+        else
+            std::cout << "Not Exist Nodo with name " + query_Relation + " For delete relation" << std::endl;
     }
 
     //-----------------------------------
@@ -514,9 +428,9 @@ namespace db
                 std::cout << "Opened Database Successfully!" << std::endl;
     }
 
-    bool SQLite::exsitNodo(std::string name_node)
+    bool SQLite::exsitNodo(std::string name_node, std::string id_Node)
     {
-        sql = " SELECT * FROM Nodo WHERE name_nodo = '" + name_node + "';";
+        sql = " SELECT id_Nodo FROM Nodo WHERE name_nodo = '" + name_node + "';";
 
         tool::Records records;
         existDataBase();
@@ -533,7 +447,39 @@ namespace db
         closeDB();
 
         if (records.size() == 1)
+        {
+            // tool::printRecords(records);
+            id_Node = records[0][0];
             return true;
+        }
+        else
+            return false;
+    }
+
+    bool SQLite::exsitNodo2(std::string name_node, std::string &id_Node)
+    {
+        sql = " SELECT id_Nodo FROM Nodo WHERE name_nodo = '" + name_node + "';";
+
+        tool::Records records;
+        existDataBase();
+        rc = sqlite3_exec(DB, sql.c_str(), tool::select_callback, &records, &MsgError);
+
+        if (printError)
+        {
+            if (rc != SQLITE_OK)
+                tool::printMsgError(MsgError);
+            else
+                std::cerr << records.size() << " records returned.\n";
+        }
+
+        closeDB();
+
+        if (records.size() == 1)
+        {
+            // tool::printRecords(records);
+            id_Node = records[0][0];
+            return true;
+        }
         else
             return false;
     }
@@ -598,4 +544,11 @@ namespace db
         rc = sqlite3_exec(DB, sql.c_str(), tool::print_select_callback, (void *)data, &MsgError);
         closeDB();
     }
+
+    void SQLite::ConstraintForeign()
+    {
+        sql = "PRAGMA foreign_keys = ON;";
+        rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
+    }
+
 }
