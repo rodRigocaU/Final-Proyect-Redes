@@ -35,7 +35,7 @@ namespace app{
 
     std::mutex alternateConsolePrintMutex, repoInteractionMutex, repoTaskQueueMutex;
     uint64_t onlineRepositoriesCount;
-    std::queue<std::tuple<char, IdNetNode, std::list<IdNetNode>>> preProcessRepositoryQueue;
+    std::queue<std::tuple<char, IdNetNode, IdNetNode>> preProcessRepositoryQueue;
   public:
     ServerMaster(const uint16_t& listenerPortClient, const uint16_t& listenerPortRepository);
     void run();

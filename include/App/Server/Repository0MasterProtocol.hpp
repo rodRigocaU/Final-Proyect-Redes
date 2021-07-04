@@ -3,14 +3,13 @@
 
 #include <list>
 #include <string>
-#include <utility>
 
 /*
-  <l> + <IdNode> + | + <IdNode | &>
+  <l> + <IdNode | &>
 */
 #define COMMAND_LINK      'l'
 /*
-  <d> + <IdNode> + | + <IdNode | &>
+  <d> + <IdNode | &>
 */
 #define COMMAND_DETACH    'd'
 /*
@@ -23,7 +22,7 @@
 
 namespace tool{
 
-  std::pair<uint64_t, std::list<uint64_t>> parseRepoActiveCommand(const std::string& commandBody);
+  std::list<uint64_t> parseRepoActiveCommand(const std::string& commandBody);
 
 }
 

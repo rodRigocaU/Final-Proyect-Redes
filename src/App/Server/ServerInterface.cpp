@@ -55,15 +55,19 @@ void app::ServerMaster::connEnvironmentRepository(std::shared_ptr<rdt::RDTSocket
     else if(message[0] == COMMAND_LINK){
       repoTaskQueueMutex.lock();
       message = message.substr(1);
-      std::pair<IdNetNode, std::list<IdNetNode>> commandBody = tool::parseRepoActiveCommand(message);
-      preProcessRepositoryQueue.push({COMMAND_LINK, commandBody.first, commandBody.second});
+      std::list<IdNetNode> commandBody = tool::parseRepoActiveCommand(message);
+      for(auto& item : commandBody){
+        preProcessRepositoryQueue.push({COMMAND_LINK, item, repositoryId});
+      }
       repoTaskQueueMutex.unlock();
     }
     else if(message[0] == COMMAND_DETACH){
       repoTaskQueueMutex.lock();
       message = message.substr(1);
-      std::pair<IdNetNode, std::list<IdNetNode>> commandBody = tool::parseRepoActiveCommand(message);
-      preProcessRepositoryQueue.push({COMMAND_DETACH, commandBody.first, commandBody.second});
+      std::list<IdNetNode> commandBody = tool::parseRepoActiveCommand(message);
+      for(auto& item : commandBody){
+        preProcessRepositoryQueue.push({COMMAND_DETACH, item, repositoryId});
+      }
       repoTaskQueueMutex.unlock();
     }
   }
@@ -79,7 +83,8 @@ void app::ServerMaster::runRepositoryListener(){
     if(repositoryListener.accept(*newRepositoryIntent) == net::Status::Done){
       repositoryConnectionPool[REPOSITORY_LIMIT + newRepositoryIntent->getSocketFileDescriptor()] = {0, newRepositoryIntent};
       ++onlineRepositoriesCount;
-      std::thread clientThread(&ServerMaster::connEnvironmentRepository, this, newRepositoryIntent);
+      std::thread repositoryThread(&ServerMaster::connEnvironmentRepository, this, newRepositoryIntent);
+      repositoryThread.detach();
       alternateConsolePrintMutex.lock();
       tool::ConsolePrint("=>[SERVER MASTER <Spam>]: New repository connected.", CYAN);
       std::cout << *newRepositoryIntent << std::endl;
