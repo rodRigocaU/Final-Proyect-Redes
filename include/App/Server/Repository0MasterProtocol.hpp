@@ -5,6 +5,10 @@
 #include <string>
 
 /*
+  <?>
+*/
+#define COMMAND_LIST      '?'
+/*
   <l> + <IdNode | &>
 */
 #define COMMAND_LINK      'l'
@@ -16,6 +20,10 @@
   <r> + <new_name>
 */
 #define COMMAND_RENAME    'r'
+/*
+  <k>
+*/
+#define COMMAND_KILL      'k'
 
 #define COMMAND_SEPARATOR '|'
 #define COMMAND_SPLIT     '&'

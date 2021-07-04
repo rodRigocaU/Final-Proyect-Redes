@@ -1,7 +1,10 @@
 #include "App/Server/ServerInterface.hpp"
 #include "App/Tools/Colors.hpp"
+#include "App/TransportParser/Client0MainServerParser.hpp"
 #include <thread>
 
+#define QUERY_PORT(pair) pair.first.first
+#define LINK_PORT(pair)  pair.first.second
 
 app::ServerMaster::ServerMaster(const uint16_t& listenerPortClient, const uint16_t& listenerPortRepository){
   tool::ConsolePrint("[SERVER MASTER <Init Client Listener>]:", CYAN);
@@ -27,48 +30,78 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket>& s
   std::string message;
   if(socket->online()){
     socket->receive(message);
-    /*
-      Process task
-    */
+    std::string dbNodeId;
+    uint8_t commandKey = message[0];
+    if(commandKey == 'c'){
+      dbNodeId = message.substr(1);
+      dbNodeId = tool::asStreamString(dbNodeId, 3);
+    }
+    else if(commandKey == 'r'){
+      dbNodeId = message.substr(1);
+      dbNodeId = tool::asStreamString(dbNodeId, 2);
+    }
+    else if(commandKey == 'u'){
+      dbNodeId = message.substr(2);
+      dbNodeId = tool::asStreamString(dbNodeId, 2);
+    }
+    else if(commandKey == 'd'){
+      dbNodeId = message.substr(2);
+      dbNodeId = tool::asStreamString(dbNodeId, 2);
+    }
+    rdt::RDTSocket queryConnection;
+    std::pair<std::pair<uint16_t, uint16_t>, std::shared_ptr<rdt::RDTSocket>> info = repositoryConnectionPool[dbNodeId[0] % onlineRepositoriesCount];
+    if(queryConnection.connect(info.second->getRemoteIpAddress(), QUERY_PORT(info)) != net::Status::Done)
+      return;
+    if(queryConnection.online()){
+      queryConnection.send(message);
+      queryConnection.receive(message);
+      /*
+        set details of message
+      */
+      queryConnection.disconnectInitializer();
+      socket->send(message);
+    }
     socket->passiveDisconnect();
   }
 }
 
 void app::ServerMaster::connEnvironmentRepository(std::shared_ptr<rdt::RDTSocket>& socket){
   IdNetNode repositoryId = REPOSITORY_LIMIT + socket->getSocketFileDescriptor();
-  uint16_t remoteListenPort;
+  uint16_t remoteListenLinkPort, remoteListenQueryPort;
   std::string message;
   socket->receive(message);
-  remoteListenPort = std::stoi(message);
+  remoteListenLinkPort = std::stoi(message);
+  socket->receive(message);
+  remoteListenQueryPort = std::stoi(message);
   repoInteractionMutex.lock();
-  repositoryConnectionPool[repositoryId] = {remoteListenPort, socket};
+  repositoryConnectionPool[repositoryId] = {{remoteListenQueryPort, remoteListenLinkPort}, socket};
   repoInteractionMutex.unlock();
   while(socket->online()){
     socket->receive(message);
     if(message[0] == COMMAND_RENAME){
       repoInteractionMutex.lock();
-      std::pair<uint16_t, std::shared_ptr<rdt::RDTSocket>> temp = repositoryConnectionPool[repositoryId];
+      std::pair<std::pair<uint16_t, uint16_t>, std::shared_ptr<rdt::RDTSocket>> temp = repositoryConnectionPool[repositoryId];
       repositoryConnectionPool.erase(repositoryId);
       repositoryConnectionPool[(repositoryId = std::stoull(message.substr(1)))] = temp;
       repoInteractionMutex.unlock();
     }
-    else if(message[0] == COMMAND_LINK){
+    else if(message[0] == COMMAND_LINK || message[0] == COMMAND_DETACH){
       repoTaskQueueMutex.lock();
       message = message.substr(1);
       std::list<IdNetNode> commandBody = tool::parseRepoActiveCommand(message);
       for(auto& item : commandBody){
-        preProcessRepositoryQueue.push({COMMAND_LINK, item, repositoryId});
+        preProcessRepositoryQueue.push({message[0], item, repositoryId});
+        /*
+          COULD CHANGE TO A SIMPLE LINK CONNECTION
+        */
       }
       repoTaskQueueMutex.unlock();
     }
-    else if(message[0] == COMMAND_DETACH){
-      repoTaskQueueMutex.lock();
-      message = message.substr(1);
-      std::list<IdNetNode> commandBody = tool::parseRepoActiveCommand(message);
-      for(auto& item : commandBody){
-        preProcessRepositoryQueue.push({COMMAND_DETACH, item, repositoryId});
-      }
-      repoTaskQueueMutex.unlock();
+    else if(message[0] == COMMAND_KILL){
+      socket->disconnectInitializer();
+      repoCountMutex.lock();
+      --onlineRepositoriesCount;
+      repoCountMutex.unlock();
     }
   }
 }
@@ -81,7 +114,7 @@ void app::ServerMaster::runRepositoryListener(){
     std::cout << "=>[SERVER MASTER <Spam>]: Waiting for a new repository..." << std::endl;
     alternateConsolePrintMutex.unlock();
     if(repositoryListener.accept(*newRepositoryIntent) == net::Status::Done){
-      repositoryConnectionPool[REPOSITORY_LIMIT + newRepositoryIntent->getSocketFileDescriptor()] = {0, newRepositoryIntent};
+      repositoryConnectionPool[REPOSITORY_LIMIT + newRepositoryIntent->getSocketFileDescriptor()] = {{0, 0}, newRepositoryIntent};
       ++onlineRepositoriesCount;
       std::thread repositoryThread(&ServerMaster::connEnvironmentRepository, this, newRepositoryIntent);
       repositoryThread.detach();

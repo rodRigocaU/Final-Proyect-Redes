@@ -25,7 +25,7 @@ namespace app{
     typedef int32_t FileDescriptor;
 
     rdt::RDTListener clientListener, repositoryListener;
-    std::map<IdNetNode, std::pair<uint16_t, std::shared_ptr<rdt::RDTSocket>>> repositoryConnectionPool;
+    std::map<IdNetNode, std::pair<std::pair<uint16_t, uint16_t>, std::shared_ptr<rdt::RDTSocket>>> repositoryConnectionPool;
     std::map<FileDescriptor, std::shared_ptr<rdt::RDTSocket>> clientConnectionPool;
 
     void connEnvironmentClient(std::shared_ptr<rdt::RDTSocket>& socket);
@@ -33,7 +33,8 @@ namespace app{
 
     void runRepositoryListener();
 
-    std::mutex alternateConsolePrintMutex, repoInteractionMutex, repoTaskQueueMutex;
+    std::mutex alternateConsolePrintMutex, repoInteractionMutex, repoTaskQueueMutex,
+               repoCountMutex;
     uint64_t onlineRepositoriesCount;
     std::queue<std::tuple<char, IdNetNode, IdNetNode>> preProcessRepositoryQueue;
   public:
