@@ -86,3 +86,11 @@ net::Status net::UdpSocket::receive(std::string& message, std::string& remoteAdd
   message = std::string(buffer).substr(0, MAX_DGRAM_SIZE);
   return net::Status::Done;
 }
+
+const uint16_t& net::UdpSocket::getLocalPort() const{
+  return localPort;
+}
+
+const std::string& net::UdpSocket::getLocalIp() const{
+  return localIp;
+}

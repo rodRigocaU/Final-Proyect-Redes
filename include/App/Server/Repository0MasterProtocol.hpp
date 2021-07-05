@@ -9,28 +9,35 @@
 */
 #define COMMAND_LIST      '?'
 /*
-  <l> + <IdNode | &>
+  <L> + <IdNode | &> -- <L> <targetId> + <targetLinkPort>
 */
-#define COMMAND_LINK      'l'
+#define COMMAND_LINK      'L'
 /*
-  <d> + <IdNode | &>
+  <D> + <IdNode | &> -- <D> <targetId>
 */
-#define COMMAND_DETACH    'd'
+#define COMMAND_DETACH    'D'
 /*
-  <r> + <new_name>
+  <R> + <new_name>
 */
-#define COMMAND_RENAME    'r'
+#define COMMAND_RENAME    'R'
 /*
-  <k>
+  <K>
 */
-#define COMMAND_KILL      'k'
+#define COMMAND_KILL      'K'
 
 #define COMMAND_SEPARATOR '|'
 #define COMMAND_SPLIT     '&'
 
+#define QUERY_PORT(pair) pair.first.first
+#define LINK_PORT(pair)  pair.first.second
+#define GET_IP_ADDRESS(pair) pair.second
+
 namespace tool{
 
-  std::list<uint64_t> parseRepoActiveCommand(const std::string& commandBody);
+  typedef uint64_t IdNetNode;
+  typedef int32_t FileDescriptor;
+  
+  std::list<IdNetNode> parseRepoActiveCommand(const std::string& commandBody);
 
 }
 

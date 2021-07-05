@@ -1,10 +1,7 @@
 #include "App/Server/ServerInterface.hpp"
 #include "App/Tools/Colors.hpp"
-#include "App/TransportParser/Client0MainServerParser.hpp"
+#include "App/Tools/Fixer.hpp"
 #include <thread>
-
-#define QUERY_PORT(pair) pair.first.first
-#define LINK_PORT(pair)  pair.first.second
 
 app::ServerMaster::ServerMaster(const uint16_t& listenerPortClient, const uint16_t& listenerPortRepository){
   tool::ConsolePrint("[SERVER MASTER <Init Client Listener>]:", CYAN);
@@ -22,11 +19,11 @@ app::ServerMaster::ServerMaster(const uint16_t& listenerPortClient, const uint16
   std::cout << clientListener << std::endl;
   tool::ConsolePrint(">> Repository Listener:", CYAN);
   std::cout << repositoryListener << std::endl;
-  tool::ConsolePrint("=================================================", VIOLET);
   onlineRepositoriesCount = 0;
+  tool::ConsolePrint("=================================================", VIOLET);
 }
 
-void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket>& socket){
+void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket> socket){
   std::string message;
   if(socket->online()){
     socket->receive(message);
@@ -49,8 +46,8 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket>& s
       dbNodeId = tool::asStreamString(dbNodeId, 2);
     }
     rdt::RDTSocket queryConnection;
-    std::pair<std::pair<uint16_t, uint16_t>, std::shared_ptr<rdt::RDTSocket>> info = repositoryConnectionPool[dbNodeId[0] % onlineRepositoriesCount];
-    if(queryConnection.connect(info.second->getRemoteIpAddress(), QUERY_PORT(info)) != net::Status::Done)
+    std::pair<std::pair<uint16_t, uint16_t>, std::string> info = repositoryConnectionPool[uint8_t(dbNodeId[0]) % onlineRepositoriesCount];
+    if(queryConnection.connect(GET_IP_ADDRESS(info), QUERY_PORT(info)) != net::Status::Done)
       return;
     if(queryConnection.online()){
       queryConnection.send(message);
@@ -65,39 +62,43 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket>& s
   }
 }
 
-void app::ServerMaster::connEnvironmentRepository(std::shared_ptr<rdt::RDTSocket>& socket){
-  IdNetNode repositoryId = REPOSITORY_LIMIT + socket->getSocketFileDescriptor();
+void app::ServerMaster::connEnvironmentRepository(std::shared_ptr<rdt::RDTSocket> socket){
+  tool::IdNetNode repositoryId = REPOSITORY_LIMIT + socket->getSocketFileDescriptor();
   uint16_t remoteListenLinkPort, remoteListenQueryPort;
   std::string message;
   socket->receive(message);
   remoteListenLinkPort = std::stoi(message);
   socket->receive(message);
   remoteListenQueryPort = std::stoi(message);
-  repoInteractionMutex.lock();
-  repositoryConnectionPool[repositoryId] = {{remoteListenQueryPort, remoteListenLinkPort}, socket};
-  repoInteractionMutex.unlock();
+  repoInfoMapMutex.lock();
+  repositoryConnectionPool[repositoryId] = {{remoteListenQueryPort, remoteListenLinkPort}, socket->getRemoteIpAddress()};
+  repoInfoMapMutex.unlock();
+
   while(socket->online()){
     socket->receive(message);
-    if(message[0] == COMMAND_RENAME){
-      repoInteractionMutex.lock();
-      std::pair<std::pair<uint16_t, uint16_t>, std::shared_ptr<rdt::RDTSocket>> temp = repositoryConnectionPool[repositoryId];
+    uint8_t commandKey = message[0];
+    if(commandKey == COMMAND_RENAME){
+      repoInfoMapMutex.lock();
+      std::pair<std::pair<uint16_t, uint16_t>, std::string> temp = repositoryConnectionPool[repositoryId];
       repositoryConnectionPool.erase(repositoryId);
       repositoryConnectionPool[(repositoryId = std::stoull(message.substr(1)))] = temp;
-      repoInteractionMutex.unlock();
+      repoInfoMapMutex.unlock();
     }
-    else if(message[0] == COMMAND_LINK || message[0] == COMMAND_DETACH){
-      repoTaskQueueMutex.lock();
+    else if(commandKey == COMMAND_LINK || commandKey == COMMAND_DETACH){
       message = message.substr(1);
-      std::list<IdNetNode> commandBody = tool::parseRepoActiveCommand(message);
-      for(auto& item : commandBody){
-        preProcessRepositoryQueue.push({message[0], item, repositoryId});
-        /*
-          COULD CHANGE TO A SIMPLE LINK CONNECTION
-        */
-      }
-      repoTaskQueueMutex.unlock();
+      std::list<tool::IdNetNode> commandBody = tool::parseRepoActiveCommand(message);
+      manageLinkDetachCommands(commandKey, commandBody, remoteListenQueryPort, remoteListenLinkPort, socket->getRemoteIpAddress(), repositoryId);
     }
     else if(message[0] == COMMAND_KILL){
+      std::string obtainedList;
+      rdt::RDTSocket listRequirementConnection;
+      if(listRequirementConnection.connect(socket->getRemoteIpAddress(), remoteListenQueryPort) == net::Status::Done){
+        listRequirementConnection.send("?");
+        listRequirementConnection.receive(obtainedList);
+        listRequirementConnection.disconnectInitializer();
+        std::list<tool::IdNetNode> targets = tool::parseRepoActiveCommand(obtainedList);
+        manageLinkDetachCommands(COMMAND_DETACH, targets, remoteListenQueryPort, remoteListenLinkPort, socket->getRemoteIpAddress(), repositoryId);
+      }
       socket->disconnectInitializer();
       repoCountMutex.lock();
       --onlineRepositoriesCount;
@@ -106,15 +107,51 @@ void app::ServerMaster::connEnvironmentRepository(std::shared_ptr<rdt::RDTSocket
   }
 }
 
+void app::ServerMaster::manageLinkDetachCommands(const uint8_t& commandKey, std::list<tool::IdNetNode> commandBody, 
+                                                  const uint16_t& port1, const uint16_t& port2, 
+                                                  const std::string& remoteIp, tool::IdNetNode id){
+  std::string prompt;
+  prompt.push_back(commandKey);
+  prompt += std::to_string(id);
+  if(commandKey == COMMAND_LINK)
+    prompt += "|" + std::to_string(port1) + "|" + std::to_string(port2) + "|" + remoteIp;
+  for(auto& item : commandBody){
+    std::shared_ptr<rdt::RDTSocket> linkConnection = std::make_shared<rdt::RDTSocket>();
+    std::map<tool::IdNetNode, std::pair<std::pair<uint16_t, uint16_t>, std::string>>::iterator finder;
+    repoInfoMapMutex.lock();
+    finder = repositoryConnectionPool.find(item);
+    if(finder == repositoryConnectionPool.end()){
+      repoInfoMapMutex.unlock();
+      alternateConsolePrintMutex.lock();
+      tool::ConsolePrint("=>[LINK INTENT <Error>]: The given ID was not found.", RED);
+      alternateConsolePrintMutex.unlock();
+      continue;
+    }
+    repoInfoMapMutex.unlock();
+    std::pair<std::pair<uint16_t, uint16_t>, std::string> dest = finder->second;
+    if(linkConnection->connect(GET_IP_ADDRESS(dest), QUERY_PORT(dest)) == net::Status::Done){
+      std::thread linkIntentThread(&ServerMaster::connEnvironmentLinkIntent, this, linkConnection, prompt);
+      linkIntentThread.detach();
+    }
+  }
+}
+
+void app::ServerMaster::connEnvironmentLinkIntent(std::shared_ptr<rdt::RDTSocket> socket, const std::string& prompt){
+  if(socket->online()){
+    socket->send(prompt);
+    socket->disconnectInitializer();
+  }
+}
+
 void app::ServerMaster::runRepositoryListener(){
   while(true){
     std::shared_ptr<rdt::RDTSocket> newRepositoryIntent;
     newRepositoryIntent = std::make_shared<rdt::RDTSocket>();
     alternateConsolePrintMutex.lock();
-    std::cout << "=>[SERVER MASTER <Spam>]: Waiting for a new repository..." << std::endl;
+    tool::ConsolePrint("=>[SERVER MASTER <Spam>]: Waiting for a new repository...", VIOLET);
     alternateConsolePrintMutex.unlock();
     if(repositoryListener.accept(*newRepositoryIntent) == net::Status::Done){
-      repositoryConnectionPool[REPOSITORY_LIMIT + newRepositoryIntent->getSocketFileDescriptor()] = {{0, 0}, newRepositoryIntent};
+      repositoryConnectionPool[REPOSITORY_LIMIT + newRepositoryIntent->getSocketFileDescriptor()] = {{0, 0}, newRepositoryIntent->getRemoteIpAddress()};
       ++onlineRepositoriesCount;
       std::thread repositoryThread(&ServerMaster::connEnvironmentRepository, this, newRepositoryIntent);
       repositoryThread.detach();
@@ -132,7 +169,7 @@ void app::ServerMaster::run(){
     std::shared_ptr<rdt::RDTSocket> newClientIntent;
     newClientIntent = std::make_shared<rdt::RDTSocket>();
     alternateConsolePrintMutex.lock();
-    std::cout << "=>[SERVER MASTER <Spam>]: Waiting for a new connection..." << std::endl;
+    tool::ConsolePrint("=>[SERVER MASTER <Spam>]: Waiting for a new connection...", VIOLET);
     alternateConsolePrintMutex.unlock();
     if(clientListener.accept(*newClientIntent) == net::Status::Done){
       clientConnectionPool[newClientIntent->getSocketFileDescriptor()] = newClientIntent;
