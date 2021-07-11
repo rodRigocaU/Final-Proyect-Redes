@@ -3,6 +3,8 @@
 
 #include <list>
 #include <string>
+#include "../Tools/InterfacePerformance.hpp"
+#include "../Tools/Colors.hpp"
 
 /*
   <?>
