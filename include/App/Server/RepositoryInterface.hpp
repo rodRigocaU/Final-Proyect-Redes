@@ -10,6 +10,8 @@
 #include "../../Network/RDTSocket.hpp"
 #include "../../Network/RDTListener.hpp"
 #include "Repository0MasterProtocol.hpp"
+#include "../../DataBase/Sqlite.hpp"
+#include "../Tools/InterfacePerformance.hpp"
 
 namespace app{
 
@@ -19,6 +21,7 @@ namespace app{
     rdt::RDTSocket masterServerSocket;
     rdt::RDTListener unknownLinkListener, unknownQueryListener;
     tool::IdNetNode ownId;
+    std::unique_ptr<db::SQLite> database;
 
     std::mutex neighboursMapMutex;
     void connEnvironmentLink(std::shared_ptr<rdt::RDTSocket> socket);
@@ -28,7 +31,7 @@ namespace app{
     void runQueryListener();
     void detachNeighbours(const std::string& nList);
   public:
-    RepositoryServer(const std::string& serverMasterIp, const uint16_t& serverMasterPort);
+    RepositoryServer(const std::string& serverMasterIp, const uint16_t& serverMasterPort, const std::string& databaseFile);
     ~RepositoryServer();
     void run();
   };

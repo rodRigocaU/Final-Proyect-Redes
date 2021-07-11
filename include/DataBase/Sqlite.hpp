@@ -32,7 +32,7 @@ namespace db
     public:
         bool printError = true;
 
-        SQLite(const std::string &nameDatabase = "GraphNetwork.db");
+        SQLite(const std::string &nameDatabase);
 
         //CRUD
         //C

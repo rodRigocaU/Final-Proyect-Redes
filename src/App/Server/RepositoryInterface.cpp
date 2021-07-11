@@ -4,7 +4,7 @@
 #include <thread>
 #include <sstream>
 
-app::RepositoryServer::RepositoryServer(const std::string& serverMasterIp, const uint16_t& serverMasterPort){
+app::RepositoryServer::RepositoryServer(const std::string& serverMasterIp, const uint16_t& serverMasterPort, const std::string& databaseFile){
   tool::ConsolePrint("[REPOSITORY <Start protocol>]:", CYAN);
   if(masterServerSocket.connect(serverMasterIp, serverMasterPort) != net::Status::Done){
     tool::ConsolePrint("[Error]: Master isn\'t online.", RED);
@@ -21,8 +21,10 @@ app::RepositoryServer::RepositoryServer(const std::string& serverMasterIp, const
   masterServerSocket.send(std::to_string(unknownLinkListener.getLocalPort()));
   masterServerSocket.send(std::to_string(unknownQueryListener.getLocalPort()));
   ownId = 0;
-  tool::ConsolePrint("[REPOSITORY <Link Listener>]:  ONLINE", GREEN);
-  tool::ConsolePrint("[REPOSITORY <Query Listener>]: ONLINE", GREEN);
+  tool::ConsolePrint("[REPOSITORY <Link Listener>]:       ONLINE", GREEN);
+  tool::ConsolePrint("[REPOSITORY <Query Listener>]:      ONLINE", GREEN);
+  database = std::make_unique<db::SQLite>(databaseFile);
+  tool::ConsolePrint("[REPOSITORY <Database Connection>]: ONLINE", GREEN);
   tool::ConsolePrint("=================================================", VIOLET);
 }
 
@@ -117,8 +119,9 @@ void app::RepositoryServer::connEnvironmentQuery(std::shared_ptr<rdt::RDTSocket>
       response = "";
       neighboursMapMutex.lock();
       for(auto& repoInfo : neighbours){
-        response += std::to_string(repoInfo.first) + "&";
+        response += std::to_string(repoInfo.first) + ",";
       }
+      response = response.substr(0, response.length() - 1);
       socket->send(response);
       neighboursMapMutex.unlock();
     }
@@ -192,6 +195,7 @@ void app::RepositoryServer::run(){
         std::cout << "New Id(number): ";
         std::cin >> body;
         message += body;
+        ownId = std::stoi(body);
         masterServerSocket.send(message);
         break;
       case COMMAND_KILL:
