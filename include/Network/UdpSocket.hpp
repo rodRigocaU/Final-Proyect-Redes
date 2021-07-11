@@ -29,6 +29,9 @@ namespace net{
     Status send(const std::string& message, const std::string& remoteAddress, const uint16_t& remotePort);
     Status receive(std::string& message, std::string& remoteAddress, uint16_t& remotePort);
 
+    const uint16_t& getLocalPort() const;
+    const std::string& getLocalIp() const;
+
     UdpSocket(const UdpSocket&) = delete;
     UdpSocket& operator=(const UdpSocket&) = delete;
     UdpSocket& operator=(UdpSocket&&) = delete;

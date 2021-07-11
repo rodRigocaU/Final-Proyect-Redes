@@ -14,6 +14,7 @@ namespace rdt{
     net::Status accept(RDTSocket& incomingConnection);
     void close();
     const uint16_t& getLocalPort() const;
+    const std::string& getLocalIp() const;
 
     friend class RDTSocket;
     friend class RDTPacket;
