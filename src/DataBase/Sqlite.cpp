@@ -1,17 +1,10 @@
 #include "DataBase/Sqlite.hpp"
-// #include "DataBase/Tools.hpp"
-
-// //!delete
-// #include <stdio.h>
-// #include <stdlib.h>
 
 namespace db
 {
 
-    SQLite::SQLite(bool printError)
-    {
-        nameDatabase = "GraphNetwork.db";
-        this->printError = printError;
+    void SQLite::setFile(const std::string& file){
+        nameDatabase = file;
     }
 
     void SQLite::createTables()
@@ -213,11 +206,11 @@ namespace db
 
     void SQLite::CreateAttributes(std::string &idNode, std::map<std::string, std::string> &attributes)
     {
-        for (auto &[name_attribute, value_attribute] : attributes)
+        for (auto& item : attributes)
         {
             sql = "INSERT INTO Attribute (idAttribute,name_attribute,value_attribute) "
                   "VALUES ( " +
-                  idNode + " , '" + name_attribute + "' , '" + value_attribute + "' );";
+                  idNode + " , '" + item.first + "' , '" + item.second + "' );";
 
             // std::cout << sql << std::endl;
 
@@ -226,7 +219,7 @@ namespace db
 
             if (printError)
             {
-                std::string attribute = "[ Name Attribute: " + name_attribute + " , Value Attribute: " + value_attribute + "]";
+                std::string attribute = "[ Name Attribute: " + item.first + " , Value Attribute: " + item.second + "]";
                 if (rc != SQLITE_OK)
                 {
                     tool::printMsgError(MsgError);

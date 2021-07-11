@@ -14,9 +14,17 @@ project(Cenapse)#Means: "Synapse", but Azure took this name first :cry:
 
 include_directories(include)
 
-file(GLOB SOURCE_FILES
+file(GLOB CLIENT_SOURCE_FILES
   "src/App/Client/*.cpp"
-  "src/App/Server/*.cpp"
+  "src/App/Tools/*.cpp"
+  "src/App/TransportParser/*.cpp"
+  "src/Network/*.cpp"
+  "src/Network/Algorithm/*.cpp"
+)
+
+file(GLOB MASTER_SOURCE_FILES
+  "src/App/Server/ServerInterface.cpp"
+  "src/App/Server/Repository0MasterProtocol.cpp"
   "src/App/Tools/*.cpp"
   "src/App/TransportParser/*.cpp"
   "src/Network/*.cpp"
@@ -25,14 +33,20 @@ file(GLOB SOURCE_FILES
 
 file(GLOB SLAVE_SOURCE_FILES
   "src/DataBase/*.cpp"
+  "src/App/Server/Repository0MasterProtocol.cpp"
+  "src/App/Server/RepositoryInterface.cpp"
+  "src/App/Tools/*.cpp"
+  "src/App/TransportParser/*.cpp"
+  "src/Network/*.cpp"
+  "src/Network/Algorithm/*.cpp"
 )
 
 file(GLOB CONFIG_FILES "${CMAKE_CURRENT_SOURCE_DIR}/settings/Cenapse.conf")
 file(COPY ${CONFIG_FILES} DESTINATION ${CMAKE_BINARY_DIR})
 
-add_executable(CClient src/Client.cpp ${SOURCE_FILES})
-add_executable(CServer src/MainServer.cpp ${SOURCE_FILES})
-add_executable(CSlave src/Slave.cpp ${SOURCE_FILES} ${SLAVE_SOURCE_FILES})
+add_executable(CClient src/Client.cpp ${CLIENT_SOURCE_FILES})
+add_executable(CServer src/MainServer.cpp ${MASTER_SOURCE_FILES})
+add_executable(CSlave src/Slave.cpp ${SLAVE_SOURCE_FILES})
 
 include_directories(/usr/include)
 link_directories(/usr/lib)

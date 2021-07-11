@@ -9,7 +9,7 @@
 #include <utility>
 #include <set>
 #include <map>
-#include "DataBase/Tools.hpp" //// #include <sqlite3.h>
+#include "Tools.hpp" //// #include <sqlite3.h>
 #include "App/TransportParser/Read.hpp"
 #include "App/TransportParser/Create.hpp"
 #include "App/TransportParser/Delete.hpp"
@@ -23,13 +23,13 @@ namespace db
     private:
         std::string nameDatabase;
         sqlite3 *DB; // descriptor database
-        bool printError;
+        bool printError = false;
         char *MsgError;
         int rc; //Status Query
         std::string sql;
 
     public:
-        SQLite(bool printError = false);
+        void setFile(const std::string& file);
         void createTables();
 
         void existDataBase();

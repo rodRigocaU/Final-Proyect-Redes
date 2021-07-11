@@ -23,7 +23,7 @@ app::RepositoryServer::RepositoryServer(const std::string& serverMasterIp, const
   ownId = 0;
   tool::ConsolePrint("[REPOSITORY <Link Listener>]:       ONLINE", GREEN);
   tool::ConsolePrint("[REPOSITORY <Query Listener>]:      ONLINE", GREEN);
-  database = std::make_unique<db::SQLite>(databaseFile);
+  database.setFile(databaseFile);
   tool::ConsolePrint("[REPOSITORY <Database Connection>]: ONLINE", GREEN);
   tool::ConsolePrint("=================================================", VIOLET);
 }
