@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "../../DataBase/Sqlite.hpp"
 #include "../../Network/RDTListener.hpp"
 #include "../../Network/RDTSocket.hpp"
 #include "Repository0MasterProtocol.hpp"

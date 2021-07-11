@@ -30,9 +30,9 @@ namespace db
         std::string sql;
 
     public:
-        bool printError = true;
-
-        SQLite(const std::string &nameDatabase);
+        bool printError = false;
+        SQLite();
+        void setFile(const std::string &nameDatabase);
 
         //CRUD
         //C

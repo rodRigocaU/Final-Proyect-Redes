@@ -4,7 +4,11 @@
 namespace db
 {
 
-    SQLite::SQLite(const std::string &nameDatabase)
+    SQLite::SQLite(){
+
+    }
+    
+    void SQLite::setFile(const std::string &nameDatabase)
     {
         this->nameDatabase = nameDatabase;
     }

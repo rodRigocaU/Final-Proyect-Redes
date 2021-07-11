@@ -21,7 +21,7 @@ namespace app{
     rdt::RDTSocket masterServerSocket;
     rdt::RDTListener unknownLinkListener, unknownQueryListener;
     tool::IdNetNode ownId;
-    std::unique_ptr<db::SQLite> database;
+    db::SQLite database;
 
     std::mutex neighboursMapMutex;
     void connEnvironmentLink(std::shared_ptr<rdt::RDTSocket> socket);
