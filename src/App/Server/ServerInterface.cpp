@@ -1,6 +1,8 @@
 #include "App/Server/ServerInterface.hpp"
 #include "App/Tools/Colors.hpp"
 #include "App/Tools/Fixer.hpp"
+#include <algorithm>
+#include <iterator>
 #include <thread>
 
 app::ServerMaster::ServerMaster(const uint16_t& listenerPortClient, const uint16_t& listenerPortRepository){
@@ -46,12 +48,16 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket> so
       dbNodeId = tool::asStreamString(dbNodeId, 2);
     }
     rdt::RDTSocket queryConnection;
-    std::pair<std::pair<uint16_t, uint16_t>, std::string> info = repositoryConnectionPool[uint8_t(dbNodeId[0]) % onlineRepositoriesCount];
+    std::vector<tool::IdNetNode> idNetNodeList;
+    std::transform(repositoryConnectionPool.begin(), repositoryConnectionPool.end(), std::back_inserter(idNetNodeList), [](auto &key){ return key.first;});
+    repoInfoMapMutex.lock();
+    std::pair<std::pair<uint16_t, uint16_t>, std::string> info = repositoryConnectionPool[idNetNodeList[dbNodeId[0] % onlineRepositoriesCount]];
+    repoInfoMapMutex.unlock();
     if(queryConnection.connect(GET_IP_ADDRESS(info), QUERY_PORT(info)) != net::Status::Done)
       return;
     if(queryConnection.online()){
       queryConnection.send(message);
-      queryConnection.receive(message);
+      queryConnection.receive(message);//if is Read it is necessary
       /*
         set details of message
       */
@@ -172,7 +178,6 @@ void app::ServerMaster::run(){
     tool::ConsolePrint("=>[SERVER MASTER <Spam>]: Waiting for a new connection...", VIOLET);
     alternateConsolePrintMutex.unlock();
     if(clientListener.accept(*newClientIntent) == net::Status::Done){
-      clientConnectionPool[newClientIntent->getSocketFileDescriptor()] = newClientIntent;
       std::thread clientThread(&ServerMaster::connEnvironmentClient, this, newClientIntent);
       clientThread.detach();
       alternateConsolePrintMutex.lock();

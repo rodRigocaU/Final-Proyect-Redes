@@ -10,8 +10,9 @@
 #include <utility>
 #include <vector>
 
-#include "../../Network/RDTSocket.hpp"
+#include "../../DataBase/Sqlite.hpp"
 #include "../../Network/RDTListener.hpp"
+#include "../../Network/RDTSocket.hpp"
 #include "Repository0MasterProtocol.hpp"
 
 #define REPOSITORY_LIMIT   1000
@@ -22,7 +23,6 @@ namespace app{
   private:
     rdt::RDTListener clientListener, repositoryListener;
     std::map<tool::IdNetNode, std::pair<std::pair<uint16_t, uint16_t>, std::string>> repositoryConnectionPool;
-    std::map<tool::FileDescriptor, std::shared_ptr<rdt::RDTSocket>> clientConnectionPool;
 
     void connEnvironmentClient(std::shared_ptr<rdt::RDTSocket> socket);
     void connEnvironmentRepository(std::shared_ptr<rdt::RDTSocket> socket);

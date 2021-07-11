@@ -21,6 +21,8 @@ app::RepositoryServer::RepositoryServer(const std::string& serverMasterIp, const
   masterServerSocket.send(std::to_string(unknownLinkListener.getLocalPort()));
   masterServerSocket.send(std::to_string(unknownQueryListener.getLocalPort()));
   ownId = 0;
+  tool::ConsolePrint("[REPOSITORY <Link Listener>]:  ONLINE", GREEN);
+  tool::ConsolePrint("[REPOSITORY <Query Listener>]: ONLINE", GREEN);
   tool::ConsolePrint("=================================================", VIOLET);
 }
 
@@ -128,16 +130,9 @@ void app::RepositoryServer::runLinkListener(){
   while(true){
     std::shared_ptr<rdt::RDTSocket> newLinkIntent;
     newLinkIntent = std::make_shared<rdt::RDTSocket>();
-    alternateConsolePrintMutex.lock();
-    std::cout << "=>[REPOSITORY <Spam>]: Waiting for a new link intent..." << std::endl;
-    alternateConsolePrintMutex.unlock();
     if(unknownLinkListener.accept(*newLinkIntent) == net::Status::Done){
       std::thread linkIntentThread(&RepositoryServer::connEnvironmentLink, this, newLinkIntent);
       linkIntentThread.detach();
-      alternateConsolePrintMutex.lock();
-      tool::ConsolePrint("=>[REPOSITORY <Spam>]: Link intent accepted.", CYAN);
-      std::cout << *newLinkIntent << std::endl;
-      alternateConsolePrintMutex.unlock();
     }
   }
 }
@@ -146,33 +141,65 @@ void app::RepositoryServer::runQueryListener(){
   while(true){
     std::shared_ptr<rdt::RDTSocket> newQueryIntent;
     newQueryIntent = std::make_shared<rdt::RDTSocket>();
-    alternateConsolePrintMutex.lock();
-    std::cout << "=>[REPOSITORY <Spam>]: Waiting for a new query..." << std::endl;
-    alternateConsolePrintMutex.unlock();
     if(unknownQueryListener.accept(*newQueryIntent) == net::Status::Done){
       std::thread queryThread(&RepositoryServer::connEnvironmentQuery, this, newQueryIntent);
       queryThread.detach();
-      alternateConsolePrintMutex.lock();
-      tool::ConsolePrint("=>[REPOSITORY <Spam>]: Accepted query and ready to comply.", CYAN);
-      std::cout << *newQueryIntent << std::endl;
-      alternateConsolePrintMutex.unlock();
     }
+  }
+}
+
+void app::RepositoryServer::detachNeighbours(const std::string& nList){
+  std::string nodeId;
+  std::stringstream buffer;
+  buffer << nList;
+  while(std::getline(buffer, nodeId, COMMAND_SPLIT)){
+    neighboursMapMutex.lock();
+    neighbours.erase(std::stoull(nodeId));
+    neighboursMapMutex.unlock();
   }
 }
 
 void app::RepositoryServer::run(){
   std::thread linkListenThread(&RepositoryServer::runLinkListener, this);
   std::thread queryListenThread(&RepositoryServer::runQueryListener, this);
-  std::string message;
+  std::string message, body;
+  int8_t commKey;
   while(masterServerSocket.online()){
-    alternateConsolePrintMutex.lock();
+    message.clear();
     std::cout << ">> ";
-    alternateConsolePrintMutex.unlock();
-    std::cin >> message;
-    masterServerSocket.send(message);
-    /*
-      set details of message
-    */
+    std::cin >> commKey;
+    switch(commKey){
+      case COMMAND_LINK:
+        message.push_back(commKey);
+        std::cin >> body;
+        message += body;
+        masterServerSocket.send(message);
+        break;
+      case COMMAND_DETACH:  
+        message.push_back(commKey);
+        std::cin >> body;
+        message += body;
+        detachNeighbours(body);
+        masterServerSocket.send(message);
+        break;
+      case COMMAND_LIST:
+        message.push_back(commKey);
+        masterServerSocket.send(message);
+        masterServerSocket.receive(message);
+        break;
+      case COMMAND_RENAME:
+        message.push_back(commKey);
+        std::cout << "New Id(number): ";
+        std::cin >> body;
+        message += body;
+        masterServerSocket.send(message);
+        break;
+      case COMMAND_KILL:
+        message.push_back(commKey);
+        masterServerSocket.send(message);
+        masterServerSocket.passiveDisconnect();
+        break;
+    }
   }
   linkListenThread.join();
   queryListenThread.join();

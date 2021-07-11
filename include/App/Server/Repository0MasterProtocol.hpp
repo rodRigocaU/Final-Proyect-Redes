@@ -26,7 +26,7 @@
 #define COMMAND_KILL      'K'
 
 #define COMMAND_SEPARATOR '|'
-#define COMMAND_SPLIT     '&'
+#define COMMAND_SPLIT     ','
 
 #define QUERY_PORT(pair) pair.first.first
 #define LINK_PORT(pair)  pair.first.second

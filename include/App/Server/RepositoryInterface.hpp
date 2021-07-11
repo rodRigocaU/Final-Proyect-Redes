@@ -20,12 +20,13 @@ namespace app{
     rdt::RDTListener unknownLinkListener, unknownQueryListener;
     tool::IdNetNode ownId;
 
-    std::mutex alternateConsolePrintMutex, neighboursMapMutex;
+    std::mutex neighboursMapMutex;
     void connEnvironmentLink(std::shared_ptr<rdt::RDTSocket> socket);
     void connEnvironmentQuery(std::shared_ptr<rdt::RDTSocket> socket);
 
     void runLinkListener();
     void runQueryListener();
+    void detachNeighbours(const std::string& nList);
   public:
     RepositoryServer(const std::string& serverMasterIp, const uint16_t& serverMasterPort);
     ~RepositoryServer();
