@@ -18,5 +18,5 @@ double rdt::RTTEstimator::EWMA(const double& sample, const double& lastEWMA){
 
 int32_t rdt::RTTEstimator::estimate(const double& currentRTT){
   lastEstimated = EWMA(currentRTT, lastEstimated);
-  return std::max(static_cast<int32_t>(std::round(lastEstimated) * 2), MIN_RTT_VALUE);
+  return std::max(static_cast<int32_t>(std::round(lastEstimated) * 2), TIMEOUT_LOWERBOUND);
 }

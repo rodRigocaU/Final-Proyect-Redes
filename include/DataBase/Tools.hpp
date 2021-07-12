@@ -7,10 +7,18 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include <sqlite3.h>
 
-namespace tool{
+#include <iomanip>
+
+namespace tool
+{
   using Record = std::vector<std::string>;
   using Records = std::vector<Record>;
+
+  const char separator = ' ';
+  const int nameWidth = 15;
+  const int numWidth = 15;
 
   void printMsgError(char *msg);
 
@@ -22,6 +30,14 @@ namespace tool{
 
   int print_select_callback(void *flag, int argc, char **argv, char **azColName);
 
+  int select_relations_callback(void *p_data, int num_fields, char **p_fields, char **p_col_names);
+
+  void printNode(std::string &name_node);
+  void printRecords(Records records);
+
+  template <typename T>
+  void printElement(T t, const int &width);
+
 }
 
-#endif//TOOLS_HPP_
+#endif //TOOLS_HPP_

@@ -186,7 +186,8 @@ net::Status rdt::RDTSocket::secureRecv(std::string& packet, const RDTPacket::Typ
         std::string ACK;
         //CASE 1: Normal situation, Packet with correct ACK received
         if(packer.isSynchronized(alterBit) && packer.getPacketType() != RDTPacket::Type::Acknowledgement)
-          successReceiving = true;
+          if(packer.getPacketType() == pType)
+            successReceiving = true;
         //CASE 2: Received an ACK of any other receive call function, unexpected and ignored
         //        Receive function only accepts Packets with not ACK flags.
         else if(packer.getPacketType() == RDTPacket::Type::Acknowledgement)
@@ -235,6 +236,10 @@ net::Status rdt::RDTSocket::receive(std::string& message){
     message += packetChunk;
   }
   return net::Status::Done;
+}
+
+bool rdt::RDTSocket::online(){
+  return (mainSocket != nullptr) && (connectionStatus == net::Connected);
 }
 
 void rdt::RDTSocket::disconnectInitializer(){

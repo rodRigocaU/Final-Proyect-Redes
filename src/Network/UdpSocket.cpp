@@ -22,10 +22,7 @@ net::UdpSocket::~UdpSocket(){
 net::Status net::UdpSocket::bind(const uint16_t& localPort){
   struct sockaddr_in sockSettings;
   sockSettings.sin_family = AF_INET;
-  if(localPort == 0)
-    sockSettings.sin_port = 0;
-  else
-    sockSettings.sin_port = htons(localPort);
+  sockSettings.sin_port = (localPort == 0)?0:htons(localPort);
   sockSettings.sin_addr.s_addr = INADDR_ANY;
   if(::bind(socketId, reinterpret_cast<const sockaddr*>(&sockSettings), sizeof(sockSettings)) < 0){
     std::cerr << "[Socket Binding] : --FAILURE--\n";
@@ -88,4 +85,12 @@ net::Status net::UdpSocket::receive(std::string& message, std::string& remoteAdd
   remotePort = ntohs(destination.sin_port);
   message = std::string(buffer).substr(0, MAX_DGRAM_SIZE);
   return net::Status::Done;
+}
+
+const uint16_t& net::UdpSocket::getLocalPort() const{
+  return localPort;
+}
+
+const std::string& net::UdpSocket::getLocalIp() const{
+  return localIp;
 }

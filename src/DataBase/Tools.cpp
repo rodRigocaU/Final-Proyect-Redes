@@ -1,23 +1,12 @@
 #include "DataBase/Tools.hpp"
 
-namespace tool{
+namespace tool
+{
 
     void printMsgError(char *msg)
     {
         std::cout << "SQL error: " << msg << std::endl;
-        free(msg);
-    }
-
-    void decoOperator(std::string opt)
-    {
-        if (opt == "1")
-            opt = "=";
-        else if (opt == "2")
-            opt = ">";
-        else if (opt == "3")
-            opt = "<";
-        else if (opt == "4")
-            opt = "LIKE";
+        sqlite3_free(msg);
     }
 
     int select_callback(void *p_data, int num_fields, char **p_fields, char **p_col_names)
@@ -29,7 +18,6 @@ namespace tool{
         }
         catch (...)
         {
-            // abort select on failure, don't let exception propogate thru sqlite3 call-stack
             return 1;
         }
         return 0;
@@ -58,4 +46,24 @@ namespace tool{
         return 0;
     }
 
+    void printNode(std::string &name_node)
+    {
+        std::cout << "Nodo : " << name_node << std::endl;
+    }
+
+    void printRecords(Records records)
+    {
+        for (auto &i : records)
+        {
+            for (auto &j : i)
+                printElement(j, nameWidth);
+            std::cout << std::endl;
+        }
+    }
+
+    template <typename T>
+    void printElement(T t, const int &width)
+    {
+        std::cout << std::left << std::setw(width) << std::setfill(separator) << t;
+    }
 }

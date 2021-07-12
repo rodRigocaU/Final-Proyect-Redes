@@ -3,6 +3,9 @@
 
 #include "../../Network/RDTSocket.hpp"
 #include "ClientCodeInput.hpp"
+#include "App/Tools/Colors.hpp"
+#include "App/Tools/Fixer.hpp"
+#include "App/Tools/InterfacePerformance.hpp"
 
 #include <iostream>
 #include <functional>
@@ -23,6 +26,8 @@ namespace app {
     bool drop();
     
     rdt::RDTSocket clientSocket;
+    std::string serverMasterIp;
+    uint16_t serverMasterPort;
   public:
     Client(const std::string& serverIp, const std::string& serverPort);
     bool setCommand(const std::string& command);
