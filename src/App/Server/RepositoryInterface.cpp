@@ -1,6 +1,5 @@
 #include "App/Server/RepositoryInterface.hpp"
 #include "App/Tools/Colors.hpp"
-#include "App/TransportParser/Client0MainServerParser.hpp"
 #include <thread>
 #include <sstream>
 
@@ -33,6 +32,15 @@ app::RepositoryServer::~RepositoryServer(){
   unknownQueryListener.close();
 }
 
+void app::RepositoryServer::propagateReadable(std::shared_ptr<rdt::RDTSocket> socket, const std::string& propagation, std::queue<std::string>& taskQueue){
+  if(socket->online()){
+    std::string response;
+    socket->send(propagation);
+    socket->receive(response);
+    taskQueue.push(response);
+    socket->disconnectInitializer();
+  }
+}
 
 void app::RepositoryServer::connEnvironmentLink(std::shared_ptr<rdt::RDTSocket> socket){
   std::string futureNeighbourInfo, strRemoteId, strQueryPort, strLinkPort, remoteNeighbourIp;
@@ -59,30 +67,46 @@ void app::RepositoryServer::connEnvironmentQuery(std::shared_ptr<rdt::RDTSocket>
     if(commandKey == 'c'){
       msg::CreateNodePacket qPacket;
       qPacket << query;
-      //SQLite
-      socket->send("ok");
+      database.Create(qPacket);
     }
     else if(commandKey == 'r'){
       msg::ReadNodePacket qPacket;
       qPacket << query;
-      //SQLite + PROPAGATION
-      /*
-        FOR(NEIGHBOUR IN NEIGHBOURS)
-          CONNECT QUERY LISTENER AND SEND QUERY(DEPTH - 1) + PATH
-      */
-     socket->send("response");
+      std::vector<std::pair<std::pair<uint16_t, uint16_t>, std::string>> tempNeighbours;
+      neighboursMapMutex.lock();
+      std::transform(neighbours.begin(), neighbours.end(), std::back_inserter(tempNeighbours), [](auto &key){ return key.second;});
+      neighboursMapMutex.unlock();
+      database.Read(qPacket);//FALTA OBTENER SU RETURN
+      if(qPacket.depth > 0){
+        qPacket.depth -= 1;
+        std::string propagation;
+        qPacket >> propagation;
+        std::queue<std::string> taskQueue;
+        for(auto& item : tempNeighbours){
+          std::shared_ptr<rdt::RDTSocket> queryConnection = std::make_shared<rdt::RDTSocket>();
+          if(queryConnection->connect(GET_IP_ADDRESS(item), QUERY_PORT(item)) == net::Status::Done){
+            std::thread propagationThread(&RepositoryServer::propagateReadable, this, queryConnection, propagation, std::ref(taskQueue));
+            propagationThread.detach();
+          }
+        }
+        int32_t neighbourCount = tempNeighbours.size();
+        while(neighbourCount--){
+          while(taskQueue.empty()){}
+          response += taskQueue.front();
+          taskQueue.pop();
+        }
+      }
+      socket->send(response);
     }
     else if(commandKey == 'u'){
       msg::UpdateNodePacket qPacket;
       qPacket << query;
-      //SQLite
-      socket->send("ok");
+      database.Update(qPacket);
     }
     else if(commandKey == 'd'){
       msg::DeleteNodePacket qPacket;
       qPacket << query;
-      //SQLite
-      socket->send("ok");
+      database.Delete(qPacket);
     }
     else if(commandKey == COMMAND_LINK){
       query = query.substr(1);
@@ -118,10 +142,15 @@ void app::RepositoryServer::connEnvironmentQuery(std::shared_ptr<rdt::RDTSocket>
     else if(commandKey == COMMAND_LIST){
       response = "";
       neighboursMapMutex.lock();
-      for(auto& repoInfo : neighbours){
-        response += std::to_string(repoInfo.first) + ",";
+      if(neighbours.size()){
+        for(auto& repoInfo : neighbours){
+          response += std::to_string(repoInfo.first) + ",";
+        }
+        response = response.substr(0, response.length() - 1);
       }
-      response = response.substr(0, response.length() - 1);
+      else{
+        response = "empty";
+      }
       socket->send(response);
       neighboursMapMutex.unlock();
     }
@@ -189,6 +218,7 @@ void app::RepositoryServer::run(){
         message.push_back(commKey);
         masterServerSocket.send(message);
         masterServerSocket.receive(message);
+        std::cout << message << std::endl;
         break;
       case COMMAND_RENAME:
         message.push_back(commKey);

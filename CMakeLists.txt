@@ -44,6 +44,9 @@ file(GLOB SLAVE_SOURCE_FILES
 file(GLOB CONFIG_FILES "${CMAKE_CURRENT_SOURCE_DIR}/settings/Cenapse.conf")
 file(COPY ${CONFIG_FILES} DESTINATION ${CMAKE_BINARY_DIR})
 
+file(GLOB DB_FILE "${CMAKE_CURRENT_SOURCE_DIR}/GraphNetwork.db")
+file(COPY ${DB_FILE} DESTINATION ${CMAKE_BINARY_DIR})
+
 add_executable(CClient src/Client.cpp ${CLIENT_SOURCE_FILES})
 add_executable(CServer src/MainServer.cpp ${MASTER_SOURCE_FILES})
 add_executable(CSlave src/Slave.cpp ${SLAVE_SOURCE_FILES})

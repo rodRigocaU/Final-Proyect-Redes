@@ -53,7 +53,7 @@ namespace db
         void CreateRelations(std::string &idNode, std::vector<std::string> &nodes_relations);
 
         //R (Falta)
-        void Read(std::string &query_node, uint8_t deep, msg::ReadNodePacket::Class &leaf, msg::ReadNodePacket::QueryMode &attributes, std::vector<msg::ReadNodePacket::Feature> &features);
+        std::vector<std::string> Read(msg::ReadNodePacket packetRead);
 
         // U
         void Update(msg::UpdateNodePacket &packetUpdate);

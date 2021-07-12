@@ -1,9 +1,11 @@
 #ifndef REPOSITORY_INTERFACE_HPP_
 #define REPOSITORY_INTERFACE_HPP_
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <queue>
 #include <string>
 #include <vector>
 
@@ -11,6 +13,7 @@
 #include "../../Network/RDTListener.hpp"
 #include "Repository0MasterProtocol.hpp"
 #include "../../DataBase/Sqlite.hpp"
+#include "App/TransportParser/Client0MainServerParser.hpp"
 
 namespace app{
 
@@ -29,6 +32,7 @@ namespace app{
     void runLinkListener();
     void runQueryListener();
     void detachNeighbours(const std::string& nList);
+    void propagateReadable(std::shared_ptr<rdt::RDTSocket> socket, const std::string& readPacket, std::queue<std::string>& taskQueue);
   public:
     RepositoryServer(const std::string& serverMasterIp, const uint16_t& serverMasterPort, const std::string& databaseFile);
     ~RepositoryServer();

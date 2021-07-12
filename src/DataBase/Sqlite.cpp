@@ -268,8 +268,7 @@ namespace db
     }
 
     //----------------R:Read-------------------------
-    void SQLite::Read(std::string &query_node, uint8_t deep, msg::ReadNodePacket::Class &leaf, msg::ReadNodePacket::QueryMode &attributes, std::vector<msg::ReadNodePacket::Feature> &features)
-    {
+    std::vector<std::string> SQLite::Read(msg::ReadNodePacket packetRead)  {
         //!Solo consultas con profunidad (deep) de 0
         //Tomando en cuenta que deep sea 0
         //leaf ->Class-> Leaf, Internal, NoneClass
@@ -277,106 +276,90 @@ namespace db
         // features: atributos Read.hpp attrName,attrValue,sqlOpId,boolOpId
         //  operador -> sqlOpId -> Equal, LessThan, MoreThan, Like, NoneSQL;
         //  is_and -> BooleanOperator -> And, Or, NoneBO;
+        std::vector<std::string> neighbours;
         std::string idNode;
-        if (!(deep - '0'))
-        {
-            if (leaf == msg::ReadNodePacket::Class::Internal)
-            {
 
-                if (existNodo(query_node, idNode))
+        if (!(packetRead.depth - '0'))
+        {
+            if (packetRead.nodeType == msg::ReadNodePacket::Class::Leaf)
+            {
+                //Controlar la ciclos (pero ;v no guardamos el camino)
+
+                if (existNodo(packetRead.nodeId, idNode))
                 {
                     std::vector<bool> recordsFound;
                     tool::Records records;
-                    for (auto &feature : features)
-                    {
-                        sql = "SELECT name_attribute, value_attribute from Attribute WHERE idAttribute = '" + idNode + "' AND (";
-                        sql += " name_attribute = '" + feature.attrName + "' AND value_attribute";
-
-                        //? no deberia usarse porque todo lo guardado es string: LessThan (<) MoreThan(>)
-                        switch (feature.sqlOpId)
+                    if (packetRead.features.size()){
+                        for (auto &feature : packetRead.features)
                         {
-                        case msg::ReadNodePacket::SqlOperator::Equal:
-                            sql += " = '" + feature.attrValue + "' )";
-                            break;
-                        case msg::ReadNodePacket::SqlOperator::Like:
-                            sql += " LIKE '%" + feature.attrValue + "%' )";
-                            break;
+                            sql = "SELECT name_attribute, value_attribute from Attribute WHERE idAttribute = '" + idNode + "' AND (";
+                            sql += " name_attribute = '" + feature.attrName + "' AND value_attribute";
+
+                            //? no deberia usarse porque todo lo guardado es string: LessThan (<) MoreThan(>)
+                            switch (feature.sqlOpId)
+                            {
+                            case msg::ReadNodePacket::SqlOperator::Equal:
+                                sql += " = '" + feature.attrValue + "' )";
+                                break;
+                            case msg::ReadNodePacket::SqlOperator::Like:
+                                sql += " LIKE '%" + feature.attrValue + "%' )";
+                                break;
+                            }
+
+                            existDataBase();
+                            rc = sqlite3_exec(DB, sql.c_str(), tool::select_callback, &records, &MsgError);
+
+                            recordsFound.push_back(records.size());
                         }
-
-                        // std::cout << sql << std::endl;
-
-                        existDataBase();
-                        rc = sqlite3_exec(DB, sql.c_str(), tool::select_callback, &records, &MsgError);
-
-                        recordsFound.push_back(records.size());
                     }
 
                     bool ans = true; //*Por defecto es true si no hay condicionales
-                    if (recordsFound.size())
+                    
+                    //--------------Where--------------------
+                    if (packetRead.features.size())
                         ans = recordsFound[0];
-
-                    for (int i = 0; i < recordsFound.size() - 1; i++)
+                    for (int i = 0; i < packetRead.features.size() - 1; i++)
                     {
-                        if (features[i].boolOpId == msg::ReadNodePacket::BooleanOperator::And)
+                        if (packetRead.features[i].boolOpId == msg::ReadNodePacket::BooleanOperator::And)
                             ans = ans && recordsFound[i + 1];
-                        else if (features[i].boolOpId == msg::ReadNodePacket::BooleanOperator::Or)
+                        else if (packetRead.features[i].boolOpId == msg::ReadNodePacket::BooleanOperator::Or)
                             ans = ans || recordsFound[i + 1];
                     }
-
+                    //--------------Fin Where--------------------
                     if (ans)
-                    {
-                        //!Cambiar de impresion a devolverlo
-                        switch (attributes)
-                        {
-                        case (msg::ReadNodePacket::QueryMode::Required):
-                            tool::printRecords(records);
-                            break;
-
-                        case (msg::ReadNodePacket::QueryMode::NotRequired):
-                            tool::printNode(query_node);
-                            break;
-                        }
-                    }
+                        neighbours.push_back(packetRead.nodeId); 
                 }
 
-                else
-                    std::cout << "Not Exist Nodo " + query_node << std::endl;
+                return neighbours;
             }
-
-            else
-                // ? dependera de donde se agrupara los nodos en los repositorios
-                std::cout << "Consulta de Tipo Leaf" << std::endl;
+            
+            //else msg::ReadNodePacket::Class::Internal
+                //Devolver con el camino pero no hay camino guardado
+            
         }
 
-        //!Suponiendo que es deep = 1
+        //!Suponiendo que es deep != 0
         else
         {
-
-            if (existNodo(query_node, idNode))
+            if (existNodo(packetRead.nodeId, idNode))
             {
-
                 tool::Records nodes_relations;
-                sql = "SELECT Nodo_name_end FROM Relation WHERE Nodo_name_start = '" + query_node + "';";
-                // std::cout << sql << std::endl;
-
+                sql = "SELECT Nodo_name_end FROM Relation WHERE Nodo_name_start = '" + idNode + "';";
                 existDataBase();
                 rc = sqlite3_exec(DB, sql.c_str(), tool::select_callback, &nodes_relations, &MsgError);
 
-                //! definir protocolo entre repositorios
-                if (attributes == msg::ReadNodePacket::QueryMode::Required)
-                {
-                }
+                for (auto &row : nodes_relations)
+                    for (auto &node_n : row)
+                        neighbours.push_back(node_n);
 
-                else if (attributes == msg::ReadNodePacket::QueryMode::NotRequired)
-                {
-                    std::cout << "Relaciones de " + query_node << ":" << std::endl;
-                    tool::printRecords(nodes_relations);
-                }
+                //if(packetRead.nodeType==msg::ReadNodePacket::Class::Internal){}
+                //Guardar el Path 
             }
 
-            else
-                std::cout << "Not Exist Nodo " + query_node << "With Deep 1" << std::endl;
+            return neighbours;
         }
+
+        
     }
 
     // ----------------U:Updates-------------------------

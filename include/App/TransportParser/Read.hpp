@@ -33,6 +33,7 @@ namespace msg{
     Class nodeType;
     QueryMode attribsReq;
     std::vector<Feature> features;
+    //std::string neighbor std::string path 
 
     ReadNodePacket();
 
