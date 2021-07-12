@@ -57,11 +57,11 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket> so
       return;
     if(queryConnection.online()){
       queryConnection.send(message);
-      if(commandKey == 'r')
+      if(commandKey == 'r'){
         queryConnection.receive(message);
-      
+        socket->send(message);
+      }
       queryConnection.disconnectInitializer();
-      socket->send(message);
     }
     socket->passiveDisconnect();
   }
