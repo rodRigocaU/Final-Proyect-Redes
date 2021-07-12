@@ -49,8 +49,8 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket> so
     }
     rdt::RDTSocket queryConnection;
     std::vector<tool::IdNetNode> idNetNodeList;
-    std::transform(repositoryConnectionPool.begin(), repositoryConnectionPool.end(), std::back_inserter(idNetNodeList), [](auto &key){ return key.first;});
     repoInfoMapMutex.lock();
+    std::transform(repositoryConnectionPool.begin(), repositoryConnectionPool.end(), std::back_inserter(idNetNodeList), [](auto &key){ return key.first;});
     std::pair<std::pair<uint16_t, uint16_t>, std::string> info = repositoryConnectionPool[idNetNodeList[dbNodeId[0] % onlineRepositoriesCount]];
     repoInfoMapMutex.unlock();
     if(queryConnection.connect(GET_IP_ADDRESS(info), QUERY_PORT(info)) != net::Status::Done)
@@ -95,7 +95,34 @@ void app::ServerMaster::connEnvironmentRepository(std::shared_ptr<rdt::RDTSocket
       std::list<tool::IdNetNode> commandBody = tool::parseRepoActiveCommand(message);
       manageLinkDetachCommands(commandKey, commandBody, remoteListenQueryPort, remoteListenLinkPort, socket->getRemoteIpAddress(), repositoryId);
     }
-    else if(message[0] == COMMAND_KILL){
+    else if(commandKey == COMMAND_LIST){
+      std::vector<std::pair<tool::IdNetNode, std::pair<std::pair<uint16_t, uint16_t>, std::string>>> graph;
+      repoInfoMapMutex.lock();
+      std::transform(repositoryConnectionPool.begin(), repositoryConnectionPool.end(), std::back_inserter(graph), [](auto &key){ return key;});
+      repoInfoMapMutex.unlock();
+      std::string graphStruct = "";
+      if(!graph.empty()){
+        for(auto& item : graph){
+          std::string obtainedList;
+          rdt::RDTSocket listRequestConnection;
+          if(listRequestConnection.connect(GET_IP_ADDRESS(item.second), QUERY_PORT(item.second)) == net::Status::Done){
+            if(listRequestConnection.online()){
+              listRequestConnection.send("?");
+              listRequestConnection.receive(obtainedList);
+              obtainedList = std::to_string(item.first) + "*" + obtainedList;
+              graphStruct += ("|" + obtainedList);
+              listRequestConnection.disconnectInitializer();
+            }
+          }
+        }
+        graphStruct = graphStruct.substr(1);
+        socket->send(graphStruct);
+      }
+      else{
+        socket->send("empty");
+      }
+    }
+    else if(commandKey == COMMAND_KILL){
       std::string obtainedList;
       rdt::RDTSocket listRequirementConnection;
       if(listRequirementConnection.connect(socket->getRemoteIpAddress(), remoteListenQueryPort) == net::Status::Done){
