@@ -24,7 +24,6 @@ file(GLOB CLIENT_SOURCE_FILES
 
 file(GLOB MASTER_SOURCE_FILES
   "src/App/Server/ServerInterface.cpp"
-  "src/App/Server/Repository0MasterProtocol.cpp"
   "src/App/Tools/*.cpp"
   "src/App/TransportParser/*.cpp"
   "src/Network/*.cpp"
@@ -33,7 +32,6 @@ file(GLOB MASTER_SOURCE_FILES
 
 file(GLOB SLAVE_SOURCE_FILES
   "src/DataBase/*.cpp"
-  "src/App/Server/Repository0MasterProtocol.cpp"
   "src/App/Server/RepositoryInterface.cpp"
   "src/App/Tools/*.cpp"
   "src/App/TransportParser/*.cpp"

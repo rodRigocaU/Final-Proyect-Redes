@@ -77,11 +77,11 @@ namespace msg{
     packet.depth = std::stoi(settings[CENAPSE_CODE_DEPTH]);
     std::string readType = settings[CENAPSE_CODE_LEAF];
     if(readType == CENAPSE_CODE_BOOLEAN_TRUE)
-      packet.depth = ReadNodePacket::Class::Leaf;
+      packet.nodeType = ReadNodePacket::Class::Leaf;
     else if(readType == CENAPSE_CODE_BOOLEAN_FALSE)
-      packet.depth = ReadNodePacket::Class::Internal;
+      packet.nodeType = ReadNodePacket::Class::Internal;
     else
-      packet.depth = ReadNodePacket::Class::NoneClass;
+      packet.nodeType = ReadNodePacket::Class::NoneClass;
 
     std::string requirements = settings[CENAPSE_CODE_ATRIBUTES_REQUIRED];
 

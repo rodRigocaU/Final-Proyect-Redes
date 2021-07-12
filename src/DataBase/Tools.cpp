@@ -61,6 +61,29 @@ namespace tool
         }
     }
 
+    bool isTxt(std::string &nameAttribute){
+        if (nameAttribute.size() > 4)
+        {
+            std::string extension = nameAttribute.substr(nameAttribute.size()-4,4);
+            if  (extension==".txt")
+                return true;
+        }
+        return false;
+    }
+
+    bool isImg(std::string &nameAttribute){
+        if (nameAttribute.size() > 4)
+        {
+            std::string extension = nameAttribute.substr(nameAttribute.size()-4,4);
+            if  (extension==".png")
+                return true;
+            else if (extension==".jng")
+                return true;
+        }
+        return false;
+    }
+
+
     template <typename T>
     void printElement(T t, const int &width)
     {

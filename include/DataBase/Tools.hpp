@@ -35,6 +35,9 @@ namespace tool
   void printNode(std::string &name_node);
   void printRecords(Records records);
 
+  bool isTxt(std::string &nameAttribute);
+  bool isImg(std::string &nameAttribute);
+
   template <typename T>
   void printElement(T t, const int &width);
 

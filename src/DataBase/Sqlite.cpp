@@ -3,7 +3,8 @@
 namespace db
 {
 
-    void SQLite::setFile(const std::string& file){
+    void SQLite::setFile(const std::string &file)
+    {
         nameDatabase = file;
     }
 
@@ -206,32 +207,32 @@ namespace db
 
     void SQLite::CreateAttributes(std::string &idNode, std::map<std::string, std::string> &attributes)
     {
-        for (auto& item : attributes)
+        //first : Name Atribute
+        // second : Valor Atributo
+        for (auto &item : attributes)
         {
             sql = "INSERT INTO Attribute (idAttribute,name_attribute,value_attribute) "
-                  "VALUES ( " +
-                  idNode + " , '" + item.first + "' , '" + item.second + "' );";
-
-            // std::cout << sql << std::endl;
+                      "VALUES ( " + idNode + " , '" + item.first + "' , '" + item.second + "' );";
 
             existDataBase();
             rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
-
+            closeDB();
             if (printError)
             {
-                std::string attribute = "[ Name Attribute: " + item.first + " , Value Attribute: " + item.second + "]";
-                if (rc != SQLITE_OK)
-                {
-                    tool::printMsgError(MsgError);
-                    std::cout << "  Error in create Attribute " + attribute << std::endl;
-                }
-                else
-                    std::cout << "Records Attribute " + attribute + " created successfully" << std::endl;
+                    std::string attribute = "[ Name Attribute: " + item.first + " , Value Attribute: " + item.second + "]";
+                    if (rc != SQLITE_OK)
+                    {
+                        tool::printMsgError(MsgError);
+                        std::cout << "  Error in create Attribute " + attribute << std::endl;
+                    }
+                    else
+                        std::cout << "Records Attribute " + attribute + " created successfully" << std::endl;
             }
         }
-        closeDB();
+        
     }
 
+    
     void SQLite::CreateRelation(std::string &id_node_start, std::string &id_node_end)
     {
         sql = "INSERT INTO Relation (Nodo_name_start,Nodo_name_end) "
@@ -268,7 +269,8 @@ namespace db
     }
 
     //----------------R:Read-------------------------
-    std::vector<std::string> SQLite::Read(msg::ReadNodePacket &packetRead)  {
+    std::vector<std::string> SQLite::Read(msg::ReadNodePacket &packetRead)
+    {
         //!Solo consultas con profunidad (deep) de 0
         //Tomando en cuenta que deep sea 0
         //leaf ->Class-> Leaf, Internal, NoneClass
@@ -279,7 +281,7 @@ namespace db
         std::vector<std::string> neighbours;
         std::string idNode;
 
-        if (!(packetRead.depth - '0'))
+        if (!(packetRead.depth))
         {
             if (packetRead.nodeType == msg::ReadNodePacket::Class::Leaf)
             {
@@ -289,7 +291,8 @@ namespace db
                 {
                     std::vector<bool> recordsFound;
                     tool::Records records;
-                    if (packetRead.features.size()){
+                    if (packetRead.features.size())
+                    {
                         for (auto &feature : packetRead.features)
                         {
                             sql = "SELECT name_attribute, value_attribute from Attribute WHERE idAttribute = '" + idNode + "' AND (";
@@ -314,7 +317,7 @@ namespace db
                     }
 
                     bool ans = true; //*Por defecto es true si no hay condicionales
-                    
+
                     //--------------Where--------------------
                     if (packetRead.features.size())
                         ans = recordsFound[0];
@@ -327,15 +330,14 @@ namespace db
                     }
                     //--------------Fin Where--------------------
                     if (ans)
-                        neighbours.push_back(packetRead.nodeId); 
+                        neighbours.push_back(packetRead.nodeId);
                 }
                 packetRead.depth--;
                 return neighbours;
             }
-            
+
             //else msg::ReadNodePacket::Class::Internal
-                //Devolver con el camino pero no hay camino guardado
-            
+            //Devolver con el camino pero no hay camino guardado
         }
 
         //!Suponiendo que es deep != 0
@@ -353,14 +355,12 @@ namespace db
                         neighbours.push_back(node_n);
 
                 //if(packetRead.nodeType==msg::ReadNodePacket::Class::Internal){}
-                //Guardar el Path 
+                //Guardar el Path
             }
 
             packetRead.depth--;
             return neighbours;
         }
-
-        
     }
 
     // ----------------U:Updates-------------------------

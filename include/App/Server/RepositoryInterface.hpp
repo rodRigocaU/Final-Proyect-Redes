@@ -11,28 +11,21 @@
 
 #include "../../Network/RDTSocket.hpp"
 #include "../../Network/RDTListener.hpp"
-#include "Repository0MasterProtocol.hpp"
 #include "../../DataBase/Sqlite.hpp"
 #include "App/TransportParser/Client0MainServerParser.hpp"
+#include "../Tools/InterfacePerformance.hpp"
+#include "../Tools/Colors.hpp"
 
 namespace app{
 
   class RepositoryServer{
   private:
-    std::map<tool::IdNetNode, std::pair<std::pair<uint16_t, uint16_t>, std::string>> neighbours;
     rdt::RDTSocket masterServerSocket;
-    rdt::RDTListener unknownLinkListener, unknownQueryListener;
-    tool::IdNetNode ownId;
+    rdt::RDTListener unknownQueryListener;
     db::SQLite database;
 
-    std::mutex neighboursMapMutex;
-    void connEnvironmentLink(std::shared_ptr<rdt::RDTSocket> socket);
+    std::mutex alternateConsolePrintMutex;
     void connEnvironmentQuery(std::shared_ptr<rdt::RDTSocket> socket);
-
-    void runLinkListener();
-    void runQueryListener();
-    void detachNeighbours(const std::string& nList);
-    void propagateReadable(std::shared_ptr<rdt::RDTSocket> socket, const std::string& readPacket, std::queue<std::string>& taskQueue);
   public:
     RepositoryServer(const std::string& serverMasterIp, const uint16_t& serverMasterPort, const std::string& databaseFile);
     ~RepositoryServer();
