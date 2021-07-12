@@ -57,10 +57,9 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket> so
       return;
     if(queryConnection.online()){
       queryConnection.send(message);
-      queryConnection.receive(message);//if is Read it is necessary
-      /*
-        set details of message
-      */
+      if(commandKey == 'r')
+        queryConnection.receive(message);
+      
       queryConnection.disconnectInitializer();
       socket->send(message);
     }
@@ -115,7 +114,6 @@ void app::ServerMaster::connEnvironmentRepository(std::shared_ptr<rdt::RDTSocket
             }
           }
         }
-        graphStruct = graphStruct.substr(1);
         socket->send(graphStruct);
       }
       else{

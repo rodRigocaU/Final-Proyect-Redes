@@ -34,11 +34,10 @@ namespace tool{
   bool readSettingsFile(const char* filePath, std::map<std::string, std::string>& storage, bool cleanQuots){
     std::ifstream settingsFile;
     settingsFile.open(filePath);
-    bool ok = true;
     if(settingsFile.is_open()){
       std::string line, key, value;
       while(std::getline(settingsFile, line)){
-        if(line.length() > 1 && (line[0] != DOT_CONF_TOKEN_COMMENT || line[0] != '\n' || line[0] != '\t')){
+        if(line.length() > 1 && (line[0] != DOT_CONF_TOKEN_COMMENT && line[0] != '\n' && line[0] != '\t')){
           std::stringstream tokenGroup;
           tokenGroup << line;
           std::getline(tokenGroup, key, DOT_CONF_TOKEN_SEPARATOR);
@@ -50,15 +49,18 @@ namespace tool{
               value = value.substr(1, value.length() - 2);
             }
             tool::cleanSpaces(value);
-            if(storage.find(key) != storage.end())
+            if(storage.count(key))
               storage[key] = value;
-            else
-              ok = false;
           }
         }
       }
+      for(auto& item : storage){
+        if(item.second == ""){
+          return false;
+        }
+      }
       settingsFile.close();
-      return ok;
+      return true;
     }
     return false;
   }

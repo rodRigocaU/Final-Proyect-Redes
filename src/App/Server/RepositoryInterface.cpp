@@ -142,10 +142,15 @@ void app::RepositoryServer::connEnvironmentQuery(std::shared_ptr<rdt::RDTSocket>
     else if(commandKey == COMMAND_LIST){
       response = "";
       neighboursMapMutex.lock();
-      for(auto& repoInfo : neighbours){
-        response += std::to_string(repoInfo.first) + ",";
+      if(neighbours.size()){
+        for(auto& repoInfo : neighbours){
+          response += std::to_string(repoInfo.first) + ",";
+        }
+        response = response.substr(0, response.length() - 1);
       }
-      response = response.substr(0, response.length() - 1);
+      else{
+        response = "empty";
+      }
       socket->send(response);
       neighboursMapMutex.unlock();
     }
