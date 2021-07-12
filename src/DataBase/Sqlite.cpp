@@ -268,7 +268,7 @@ namespace db
     }
 
     //----------------R:Read-------------------------
-    std::vector<std::string> SQLite::Read(msg::ReadNodePacket packetRead)  {
+    std::vector<std::string> SQLite::Read(msg::ReadNodePacket &packetRead)  {
         //!Solo consultas con profunidad (deep) de 0
         //Tomando en cuenta que deep sea 0
         //leaf ->Class-> Leaf, Internal, NoneClass
@@ -329,7 +329,7 @@ namespace db
                     if (ans)
                         neighbours.push_back(packetRead.nodeId); 
                 }
-
+                packetRead.depth--;
                 return neighbours;
             }
             
@@ -356,6 +356,7 @@ namespace db
                 //Guardar el Path 
             }
 
+            packetRead.depth--;
             return neighbours;
         }
 
