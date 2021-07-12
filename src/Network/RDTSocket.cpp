@@ -129,7 +129,8 @@ net::Status rdt::RDTSocket::secureSend(std::string& packet) {
       t_pollStart = std::chrono::high_resolution_clock::now();
       int32_t responseTimeCode = poll(sPool, 1, estimatedRTT);
       t_pollEnd = std::chrono::high_resolution_clock::now();
-      estimatedRTT = ewmaEstimator.estimate(std::chrono::duration_cast<std::chrono::milliseconds>(t_pollEnd - t_pollStart).count());
+      estimatedRTT = ewmaEstimator.estimate(
+                      std::chrono::duration_cast<std::chrono::milliseconds>(t_pollEnd - t_pollStart).count());
 
       if(responseTimeCode == ERROR_TIMER){
         return net::Status::Error;
@@ -147,7 +148,8 @@ net::Status rdt::RDTSocket::secureSend(std::string& packet) {
             if(packer.isSynchronized(alterBit) && packer.getPacketType() == RDTPacket::Type::Acknowledgement)
               successSending = true;
             //CASE 2: Packet with past ACK waiting to receive an ACK yet
-            else if(packer.isSynchronized(lastAlterBit) && packer.getPacketType() != RDTPacket::Type::Acknowledgement){
+            else if(packer.isSynchronized(lastAlterBit) && 
+                    packer.getPacketType() != RDTPacket::Type::Acknowledgement){
               std::string ACK = packer.encode("", packer.getACK(), RDTPacket::Type::Acknowledgement);
               if(mainSocket->send(ACK, remoteIp, remotePort) != net::Status::Done)
                 return net::Status::Error;
@@ -206,7 +208,8 @@ net::Status rdt::RDTSocket::send(const std::string& message){
   const uint64_t BODY_MSG_BYTE_SIZE = net::MAX_DGRAM_SIZE - RDT_HEADER_BYTE_SIZE;
   uint64_t packetCount = std::ceil(double(message.length()) / double(BODY_MSG_BYTE_SIZE));
   RDTPacket packer;
-  std::string packetCountEncoded = packer.encode(std::to_string(packetCount), alterBit, RDTPacket::Type::Information);
+  std::string packetCountEncoded = packer.encode(std::to_string(packetCount), alterBit, 
+                                                 RDTPacket::Type::Information);
   if((commStatus = secureSend(packetCountEncoded)) != net::Status::Done)
     return commStatus;
 
