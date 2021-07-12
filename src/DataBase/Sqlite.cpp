@@ -1,5 +1,9 @@
 #include "DataBase/Sqlite.hpp"
+#include "iostream"
+#include "fstream"
+#include <filesystem>
 
+using namespace std;
 namespace db
 {
 
@@ -209,27 +213,53 @@ namespace db
     {
         //first : Name Atribute
         // second : Valor Atributo
+        
+
         for (auto &item : attributes)
         {
-            sql = "INSERT INTO Attribute (idAttribute,name_attribute,value_attribute) "
-                      "VALUES ( " + idNode + " , '" + item.first + "' , '" + item.second + "' );";
+            //Attribute as .png .jpg or .txt
+            if( tool::isMultimedia(item.first) ){
+                CreateMultimedia(item.first,item.second);
+                sql = "INSERT INTO Attribute (idAttribute,name_attribute,value_attribute) "
+                        "VALUES ( " + idNode + " , '" + item.first + "' , '" + item.first + "' );";
+                existDataBase();
+                rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
+                closeDB();
+            }
 
-            existDataBase();
-            rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
-            closeDB();
-            if (printError)
-            {
-                    std::string attribute = "[ Name Attribute: " + item.first + " , Value Attribute: " + item.second + "]";
-                    if (rc != SQLITE_OK)
-                    {
-                        tool::printMsgError(MsgError);
-                        std::cout << "  Error in create Attribute " + attribute << std::endl;
-                    }
-                    else
-                        std::cout << "Records Attribute " + attribute + " created successfully" << std::endl;
+            //Attribute as string
+            else {
+                std::cout<<"Atributo Normal"<<std::endl;
+                sql = "INSERT INTO Attribute (idAttribute,name_attribute,value_attribute) "
+                        "VALUES ( " + idNode + " , '" + item.first + "' , '" + item.second + "' );";
+
+                existDataBase();
+                rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
+                closeDB();
+                if (printError)
+                {
+                        std::string attribute = "[ Name Attribute: " + item.first + " , Value Attribute: " + item.second + "]";
+                        if (rc != SQLITE_OK)
+                        {
+                            tool::printMsgError(MsgError);
+                            std::cout << "  Error in create Attribute " + attribute << std::endl;
+                        }
+                        else
+                            std::cout << "Records Attribute " + attribute + " created successfully" << std::endl;
+                }
+
             }
         }
-        
+    }
+
+    void SQLite::CreateMultimedia(std::string nameFile,std::string codeBinary){
+            std::ofstream image(nameFile, std::ios::out | std::ios::app);
+            for(int i = 0; i < codeBinary.length(); i++)
+                image.put(codeBinary[i]);
+             
+            std::cout << "BINARY-TO-IMG-COMPLETED " << '\n';
+            image.clear();
+            
     }
 
     

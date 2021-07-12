@@ -61,23 +61,17 @@ namespace tool
         }
     }
 
-    bool isTxt(std::string &nameAttribute){
+   
+    bool isMultimedia(std::string nameAttribute){
         if (nameAttribute.size() > 4)
         {
             std::string extension = nameAttribute.substr(nameAttribute.size()-4,4);
-            if  (extension==".txt")
+            std::cout<<extension<<std::endl;
+            if  (extension ==".png")
                 return true;
-        }
-        return false;
-    }
-
-    bool isImg(std::string &nameAttribute){
-        if (nameAttribute.size() > 4)
-        {
-            std::string extension = nameAttribute.substr(nameAttribute.size()-4,4);
-            if  (extension==".png")
+            else if (extension ==".jpg")
                 return true;
-            else if (extension==".jng")
+            else if  (extension ==".txt")
                 return true;
         }
         return false;

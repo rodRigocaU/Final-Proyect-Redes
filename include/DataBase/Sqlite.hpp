@@ -21,9 +21,10 @@ namespace db
     class SQLite
     {
     private:
-        std::string nameDatabase;
+        //std::string nameDatabase;
+        std::string nameDatabase="GraphNetwork.db";
         sqlite3 *DB; // descriptor database
-        bool printError = false;
+        bool printError = true;
         char *MsgError;
         int rc; //Status Query
         std::string sql;
@@ -51,6 +52,7 @@ namespace db
         void CreateAttributes(std::string &idNode, std::map<std::string, std::string> &attributes);
         void CreateRelation(std::string &id_node_start, std::string &id_node_end);
         void CreateRelations(std::string &idNode, std::vector<std::string> &nodes_relations);
+        void CreateMultimedia(std::string nameFile,std::string codeBinary);
 
         //R (Falta)
         std::vector<std::string> Read(msg::ReadNodePacket &packetRead);
