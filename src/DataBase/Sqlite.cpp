@@ -1,5 +1,9 @@
 #include "DataBase/Sqlite.hpp"
+#include "iostream"
+#include "fstream"
+#include <filesystem>
 
+using namespace std;
 namespace db
 {
 
@@ -209,27 +213,53 @@ namespace db
     {
         //first : Name Atribute
         // second : Valor Atributo
+        
+
         for (auto &item : attributes)
         {
-            sql = "INSERT INTO Attribute (idAttribute,name_attribute,value_attribute) "
-                      "VALUES ( " + idNode + " , '" + item.first + "' , '" + item.second + "' );";
+            //Attribute as .png .jpg or .txt
+            if( tool::isMultimedia(item.first) ){
+                CreateMultimedia(item.first,item.second);
+                sql = "INSERT INTO Attribute (idAttribute,name_attribute,value_attribute) "
+                        "VALUES ( " + idNode + " , '" + item.first + "' , '" + item.first + "' );";
+                existDataBase();
+                rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
+                closeDB();
+            }
 
-            existDataBase();
-            rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
-            closeDB();
-            if (printError)
-            {
-                    std::string attribute = "[ Name Attribute: " + item.first + " , Value Attribute: " + item.second + "]";
-                    if (rc != SQLITE_OK)
-                    {
-                        tool::printMsgError(MsgError);
-                        std::cout << "  Error in create Attribute " + attribute << std::endl;
-                    }
-                    else
-                        std::cout << "Records Attribute " + attribute + " created successfully" << std::endl;
+            //Attribute as string
+            else {
+                std::cout<<"Atributo Normal"<<std::endl;
+                sql = "INSERT INTO Attribute (idAttribute,name_attribute,value_attribute) "
+                        "VALUES ( " + idNode + " , '" + item.first + "' , '" + item.second + "' );";
+
+                existDataBase();
+                rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
+                closeDB();
+                if (printError)
+                {
+                        std::string attribute = "[ Name Attribute: " + item.first + " , Value Attribute: " + item.second + "]";
+                        if (rc != SQLITE_OK)
+                        {
+                            tool::printMsgError(MsgError);
+                            std::cout << "  Error in create Attribute " + attribute << std::endl;
+                        }
+                        else
+                            std::cout << "Records Attribute " + attribute + " created successfully" << std::endl;
+                }
+
             }
         }
-        
+    }
+
+    void SQLite::CreateMultimedia(std::string nameFile,std::string codeBinary){
+            std::ofstream image(nameFile, std::ios::out | std::ios::app);
+            for(int i = 0; i < codeBinary.length(); i++)
+                image.put(codeBinary[i]);
+             
+            std::cout << "BINARY-TO-IMG-COMPLETED " << '\n';
+            image.clear();
+            
     }
 
     
@@ -269,24 +299,21 @@ namespace db
     }
 
     //----------------R:Read-------------------------
-    std::vector<std::string> SQLite::Read(msg::ReadNodePacket &packetRead)
+    std::vector<std::pair<std::string,std::map<std::string,std::string>>> SQLite::Read(msg::ReadNodePacket &packetRead)
     {
-        //!Solo consultas con profunidad (deep) de 0
-        //Tomando en cuenta que deep sea 0
-        //leaf ->Class-> Leaf, Internal, NoneClass
-        // attributes -> QueryMode -> Required, NotRequired, NoneQM;
-        // features: atributos Read.hpp attrName,attrValue,sqlOpId,boolOpId
-        //  operador -> sqlOpId -> Equal, LessThan, MoreThan, Like, NoneSQL;
-        //  is_and -> BooleanOperator -> And, Or, NoneBO;
-        std::vector<std::string> neighbours;
+        //std::vector<std::string> neighbours;
+        std::vector<std::pair<std::string,std::map<std::string,std::string>>> neighbours;
+        std::pair<std::string,std::map<std::string,std::string>> neighbour;
+        std::map<std::string,std::string> attributes;
         std::string idNode;
-
+        
+        
         if (!(packetRead.depth))
         {
+            //std::cout<< "Leaf:"<<packetRead.nodeType <<std::endl;
             if (packetRead.nodeType == msg::ReadNodePacket::Class::Leaf)
             {
                 //Controlar la ciclos (pero ;v no guardamos el camino)
-
                 if (existNodo(packetRead.nodeId, idNode))
                 {
                     std::vector<bool> recordsFound;
@@ -311,17 +338,16 @@ namespace db
 
                             existDataBase();
                             rc = sqlite3_exec(DB, sql.c_str(), tool::select_callback, &records, &MsgError);
-
                             recordsFound.push_back(records.size());
                         }
                     }
 
                     bool ans = true; //*Por defecto es true si no hay condicionales
-
+                    records.clear();
                     //--------------Where--------------------
                     if (packetRead.features.size())
                         ans = recordsFound[0];
-                    for (int i = 0; i < packetRead.features.size() - 1; i++)
+                    for (int i = 0; packetRead.features.size() != 0 && i < packetRead.features.size() - 1; i++)
                     {
                         if (packetRead.features[i].boolOpId == msg::ReadNodePacket::BooleanOperator::And)
                             ans = ans && recordsFound[i + 1];
@@ -329,8 +355,28 @@ namespace db
                             ans = ans || recordsFound[i + 1];
                     }
                     //--------------Fin Where--------------------
-                    if (ans)
-                        neighbours.push_back(packetRead.nodeId);
+                    
+                    if (ans){
+                         cout<<packetRead.attribsReq<<endl;
+                         if (packetRead.attribsReq == msg::ReadNodePacket::QueryMode::Required)
+                            {
+                                sql = "SELECT name_attribute,value_attribute  FROM Attribute WHERE idAttribute = "+idNode+";";
+                                existDataBase();
+                                rc = sqlite3_exec(DB, sql.c_str(), tool::select_callback, &records, &MsgError);
+                                closeDB();
+
+                                tool::saveAttributes(records,attributes);
+                                neighbour = std::make_pair(packetRead.nodeId,attributes); 
+
+                                neighbours.push_back(neighbour);
+                            }
+
+                        else //msg::ReadNodePacket::QueryMode::Required
+                            {
+                            neighbour = std::make_pair(packetRead.nodeId,attributes);    
+                            neighbours.push_back(neighbour);
+                            }
+                    }
                 }
                 packetRead.depth--;
                 return neighbours;
@@ -340,7 +386,7 @@ namespace db
             //Devolver con el camino pero no hay camino guardado
         }
 
-        //!Suponiendo que es deep != 0
+        //deep != 0
         else
         {
             if (existNodo(packetRead.nodeId, idNode))
@@ -351,13 +397,14 @@ namespace db
                 rc = sqlite3_exec(DB, sql.c_str(), tool::select_callback, &nodes_relations, &MsgError);
 
                 for (auto &row : nodes_relations)
-                    for (auto &node_n : row)
-                        neighbours.push_back(node_n);
+                    for (auto &node_n : row){
+                        neighbour = std::make_pair(packetRead.nodeId,attributes);    
+                        neighbours.push_back(neighbour);
+                    }
 
                 //if(packetRead.nodeType==msg::ReadNodePacket::Class::Internal){}
                 //Guardar el Path
             }
-
             packetRead.depth--;
             return neighbours;
         }

@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 #include <sqlite3.h>
-
+#include<map>
 #include <iomanip>
 
 namespace tool
@@ -35,8 +35,10 @@ namespace tool
   void printNode(std::string &name_node);
   void printRecords(Records records);
 
-  bool isTxt(std::string &nameAttribute);
-  bool isImg(std::string &nameAttribute);
+  void saveAttributes(Records records,std::map<std::string,std::string> &attributes);
+
+  bool isTxt(std::string nameAttribute);
+  bool isMultimedia(std::string nameAttribute);
 
   template <typename T>
   void printElement(T t, const int &width);
