@@ -61,6 +61,22 @@ namespace tool
         }
     }
 
+    void saveAttributes(Records records,std::map<std::string,std::string> &attributes){
+        for (auto &i : records){
+            int index = 0;
+            std::string nameAttribute;
+            std::string valueAtribute;
+            for (auto &j : i){
+                if (index==0)
+                    nameAttribute=j;
+                else
+                    valueAtribute=j;
+                index++;
+            }
+            attributes[nameAttribute] = valueAtribute;
+        }
+    }
+
    
     bool isMultimedia(std::string nameAttribute){
         if (nameAttribute.size() > 4)

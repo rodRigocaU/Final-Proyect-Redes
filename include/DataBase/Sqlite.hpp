@@ -24,7 +24,7 @@ namespace db
         //std::string nameDatabase;
         std::string nameDatabase="GraphNetwork.db";
         sqlite3 *DB; // descriptor database
-        bool printError = true;
+        bool printError = false;
         char *MsgError;
         int rc; //Status Query
         std::string sql;
@@ -55,7 +55,9 @@ namespace db
         void CreateMultimedia(std::string nameFile,std::string codeBinary);
 
         //R (Falta)
-        std::vector<std::string> Read(msg::ReadNodePacket &packetRead);
+        //std::vector<std::string> Read(msg::ReadNodePacket &packetRead);
+        //void Read(msg::ReadNodePacket &packetRead);
+        std::vector<std::pair<std::string,std::map<std::string,std::string>>> Read(msg::ReadNodePacket &packetRead);
 
         // U
         void Update(msg::UpdateNodePacket &packetUpdate);
