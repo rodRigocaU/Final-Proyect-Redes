@@ -27,7 +27,7 @@ app::RepositoryServer::~RepositoryServer(){
 }
 
 void app::RepositoryServer::connEnvironmentQuery(std::shared_ptr<rdt::RDTSocket> socket){
-  std::string query, response;
+  std::string query;
   if(socket->online()){
     socket->receive(query);
     uint8_t commandKey = query[0];
@@ -37,17 +37,25 @@ void app::RepositoryServer::connEnvironmentQuery(std::shared_ptr<rdt::RDTSocket>
       database.Create(qPacket);
     }
     else if(commandKey == 'r'){
+      std::string propagation = "", response = "";
       msg::ReadNodePacket qPacket;
       qPacket << query;
-      response = "";
-      //READ devuelve un vector<pair<string,map<string,string>>
-      for(auto& neighbour : database.Read(qPacket)){
-        response += neighbour.first;
+      for(auto& read : database.Read(qPacket)){
+        propagation += read.first + ",";
+        if(!read.second.empty()){
+          response += "<" + read.first + ">";
+          for(auto& ans : read.second)
+            response += "[" + ans.first + ":" + ans.second + "],";
+        }
       }
-      socket->send(response.substr(0, response.length() - 1));
+      if(!propagation.empty())
+        propagation.pop_back();
+      if(!response.empty())
+        response.pop_back();
+      socket->send(propagation);
+      socket->send(response);
       qPacket >> query;
       socket->send(query);
-      
     }
     else if(commandKey == 'u'){
       msg::UpdateNodePacket qPacket;

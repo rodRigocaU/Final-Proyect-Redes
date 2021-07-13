@@ -19,6 +19,8 @@ namespace tool
   void cleanSpaces(std::string& word);
 
   bool readSettingsFile(const char* filePath, std::map<std::string, std::string>& storage, bool cleanQuots = false);
+
+  std::map<std::string, std::string> filterValueString(const std::string& source, const int8_t& begin, const int8_t& end, const int8_t& filter, const int8_t& separator);
 }
 
 #endif//INTERFACE_PERFORMANCE_HPP_

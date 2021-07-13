@@ -11,4 +11,6 @@
 #include "../Tools/InterfacePerformance.hpp"
 #include "../Client/ClientCodeInput.hpp"
 
+#define ATTRIBUTE_LENGTH 7
+
 #endif//INCLUDE_H_TRANSPORT_PARSER_HPP_

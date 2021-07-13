@@ -38,13 +38,16 @@ namespace msg{
     std::string dropType = settings[CENAPSE_CODE_NAR_MODE];
     if (dropType == CENAPSE_CODE_NODE_OP)
       packet.deleteMode = DeleteNodePacket::Mode::Object;
-    else if (dropType == CENAPSE_CODE_ATRIBUTE_OP)
+    else if (dropType == CENAPSE_CODE_ATRIBUTE_OP){
       packet.deleteMode = DeleteNodePacket::Mode::Attribute;
-    else if (dropType == CENAPSE_CODE_RELATION_OP)
+      packet.targetName = settings[CENAPSE_CODE_ATRIBUTE_I_RELATION];
+    }
+    else if (dropType == CENAPSE_CODE_RELATION_OP){
       packet.deleteMode = DeleteNodePacket::Mode::Relation;
+      packet.targetName = settings[CENAPSE_CODE_ATRIBUTE_I_RELATION];
+    }
     else
       packet.deleteMode = DeleteNodePacket::Mode::None;
-    packet.targetName = settings[CENAPSE_CODE_ATRIBUTE_I_RELATION];
     return packet;
   }
 

@@ -31,6 +31,25 @@ namespace tool{
     word = word.substr(cont, word.length() - (dife - 1) - cont);
   }
 
+  std::map<std::string, std::string> filterValueString(const std::string& source, const int8_t& begin, const int8_t& end, const int8_t& filter, const int8_t& separator){
+    std::stringstream buffer, promptBuffer;
+    buffer << source;
+    std::string prompt, key, value;
+    std::map<std::string, std::string> files;
+    while(std::getline(buffer, prompt, (char)begin)){
+      if(std::getline(buffer, prompt, (char)end)){
+        promptBuffer << prompt;
+        std::getline(promptBuffer, key, (char)separator);
+        std::getline(promptBuffer, value);
+        if(value[0] == filter){
+          files[key] = value.substr(1);
+        }
+      }
+      promptBuffer.clear();
+    }
+    return files;
+  }
+
   bool readSettingsFile(const char* filePath, std::map<std::string, std::string>& storage, bool cleanQuots){
     std::ifstream settingsFile;
     settingsFile.open(filePath);

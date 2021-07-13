@@ -1,5 +1,6 @@
 #include "App/Client/ClientInterface.hpp"
 #include "App/TransportParser/Client0MainServerParser.hpp"
+#include "Network/Algorithm/base64.hpp"
 
 namespace app{
 
@@ -29,6 +30,19 @@ namespace app{
     std::string message;
     if(tool::readSettingsFile("spawn.conf", settings)){
       packet << settings;
+      for(auto& item : packet.attributes){
+        if (item.second[0] == '@'){
+          std::ifstream image(item.second.substr(1), std::ios::in | std::ios::binary);
+          std::string binaryfile;
+          if(image.is_open()){
+            while (!image.eof())
+              binaryfile.push_back(image.get());
+            image.close();
+            binaryfile.pop_back();
+            item.second = "@" + crypto::encodeBase64(binaryfile);
+          }
+        }
+      }
       packet >> message;
     }
     else
@@ -51,7 +65,7 @@ namespace app{
     settings[CENAPSE_CODE_LEAF] = "";
     settings[CENAPSE_CODE_ATRIBUTES_REQUIRED];
     settings[CENAPSE_CODE_QUERY_FEATURES] = "";
-    std::string message;
+    std::string message, response;
     if(tool::readSettingsFile("ask.conf", settings)){
       packet << settings;
       packet >> message;
@@ -63,7 +77,18 @@ namespace app{
       exit(EXIT_FAILURE);
     }
     clientSocket.send(message);
+    clientSocket.receive(response);
     clientSocket.disconnectInitializer();
+    for(auto& item : tool::filterValueString(response, '[', ']', '@', ':')){
+      std::ofstream recoveredFile(item.first, std::ios::out | std::ios::binary);
+      std::string base64DecodedContent = crypto::decodeBase64(item.second);
+      base64DecodedContent.pop_back();
+      if(recoveredFile.is_open()){
+        recoveredFile << base64DecodedContent;
+        recoveredFile.close();
+      }
+    }
+    std::cout << response << std::endl;
     return true;
   }
 

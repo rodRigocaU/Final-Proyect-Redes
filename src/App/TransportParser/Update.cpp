@@ -19,7 +19,7 @@ namespace msg{
 
     if (packet.updateMode == UpdateNodePacket::Mode::Object){
       packet.attrName = tool::asStreamString(content, 3);
-      packet.attrValue = tool::asStreamString(content, 3);
+      packet.attrValue = tool::asStreamString(content, ATTRIBUTE_LENGTH);
     }
     else if (packet.updateMode == UpdateNodePacket::Mode::Attribute){
       packet.newNodeValue = tool::asStreamString(content, 2);
@@ -37,7 +37,7 @@ namespace msg{
     message += packet.newNodeValue;
     message += tool::fixToBytes(std::to_string(packet.attrName.length()), 3);
     message += packet.attrName;
-    message += tool::fixToBytes(std::to_string(packet.attrValue.length()), 3);
+    message += tool::fixToBytes(std::to_string(packet.attrValue.length()), ATTRIBUTE_LENGTH);
     message += packet.attrValue;
     return packet;
   }
@@ -46,22 +46,24 @@ namespace msg{
     packet.clear();
     packet.nodeId = settings[CENAPSE_CODE_NODE_NAME];
     std::string updateType = settings[CENAPSE_CODE_NA_MODE];
-    if (updateType == CENAPSE_CODE_NODE_OP)
+    if (updateType == CENAPSE_CODE_NODE_OP){
       packet.updateMode = UpdateNodePacket::Mode::Object;
-    else if (updateType == CENAPSE_CODE_ATRIBUTE_OP)
+      packet.newNodeValue = settings[CENAPSE_CODE_NODE_VALUE];
+    }
+    else if (updateType == CENAPSE_CODE_ATRIBUTE_OP){
       packet.updateMode = UpdateNodePacket::Mode::Attribute;
+      std::stringstream attributeGroup;
+      attributeGroup << settings[CENAPSE_CODE_ATRIBUTE_I_VALUE];
+      std::string nameAttr, valAttr;
+      std::getline(attributeGroup, nameAttr, '|');
+      std::getline(attributeGroup, valAttr);
+      tool::cleanSpaces(nameAttr);
+      tool::cleanSpaces(valAttr);
+      packet.attrName = nameAttr;
+      packet.attrValue = valAttr;
+    }
     else
       packet.updateMode = UpdateNodePacket::Mode::None;
-    packet.newNodeValue = settings[CENAPSE_CODE_NODE_VALUE];
-    std::stringstream attributeGroup;
-    attributeGroup << settings[CENAPSE_CODE_ATRIBUTE_I_VALUE];
-    std::string nameAttr, valAttr;
-    std::getline(attributeGroup, nameAttr, '|');
-    std::getline(attributeGroup, valAttr);
-    tool::cleanSpaces(nameAttr);
-    tool::cleanSpaces(valAttr);
-    packet.attrName = nameAttr;
-    packet.attrValue = valAttr;
     return packet;
   }
 

@@ -43,7 +43,7 @@ namespace msg{
       ReadNodePacket::Feature feature;
       feature.attrName = tool::asStreamString(content, 3);
       feature.sqlOpId = static_cast<ReadNodePacket::SqlOperator>(tool::asStreamNumeric(content, 1));
-      feature.attrValue = tool::asStreamString(content, 3);
+      feature.attrValue = tool::asStreamString(content, ATTRIBUTE_LENGTH);
       feature.boolOpId = static_cast<ReadNodePacket::BooleanOperator>(tool::asStreamNumeric(content, 1));
       packet.features.push_back(feature);
     }
@@ -64,7 +64,7 @@ namespace msg{
       message += tool::fixToBytes(std::to_string(feature.attrName.length()), 3);
       message += feature.attrName;
       message += std::to_string(feature.sqlOpId);
-      message += tool::fixToBytes(std::to_string(feature.attrValue.length()), 3);
+      message += tool::fixToBytes(std::to_string(feature.attrValue.length()), ATTRIBUTE_LENGTH);
       message += feature.attrValue;
       message += std::to_string(feature.boolOpId);
     }
@@ -94,32 +94,33 @@ namespace msg{
     std::string rawFeatureComponent;
     std::stringstream featureGroup;
     featureGroup << settings[CENAPSE_CODE_QUERY_FEATURES];
-    ReadNodePacket::Feature singleFeature;
-    uint8_t state = 0;
-    while(std::getline(featureGroup, rawFeatureComponent, '|')){
-      tool::cleanSpaces(rawFeatureComponent);
-      std::cout << rawFeatureComponent << std::endl;
-      if(state == 0){
-        singleFeature.attrName = rawFeatureComponent;
+    if(featureGroup.str().length()){
+      ReadNodePacket::Feature singleFeature;
+      uint8_t state = 0;
+      while(std::getline(featureGroup, rawFeatureComponent, '|')){
+        tool::cleanSpaces(rawFeatureComponent);
+        std::cout << rawFeatureComponent << std::endl;
+        if(state == 0){
+          singleFeature.attrName = rawFeatureComponent;
+        }
+        else if(state == 1){
+          singleFeature.sqlOpId = packet.sqlMeanings.find(rawFeatureComponent)->second;
+        }
+        else if(state == 2){
+          singleFeature.attrValue = rawFeatureComponent;
+        }
+        else{
+          singleFeature.boolOpId = packet.toBooleanEnum(rawFeatureComponent);
+          packet.features.push_back(singleFeature);
+          singleFeature.reset();
+          state = 0;
+          continue;
+        }
+        ++state;
       }
-      else if(state == 1){
-        singleFeature.sqlOpId = packet.sqlMeanings.find(rawFeatureComponent)->second;
-      }
-      else if(state == 2){
-        singleFeature.attrValue = rawFeatureComponent;
-      }
-      else{
-        singleFeature.boolOpId = packet.toBooleanEnum(rawFeatureComponent);
+      if(state != 0)
         packet.features.push_back(singleFeature);
-        singleFeature.reset();
-        state = 0;
-        continue;
-      }
-      ++state;
     }
-    if(state != 0)
-      packet.features.push_back(singleFeature);
-    std::cout << state << std::endl;
     return packet;
   }
 

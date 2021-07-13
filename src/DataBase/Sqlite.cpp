@@ -408,6 +408,7 @@ namespace db
             packetRead.depth--;
             return neighbours;
         }
+        return {};
     }
 
     // ----------------U:Updates-------------------------

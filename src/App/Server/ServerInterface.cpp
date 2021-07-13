@@ -7,17 +7,21 @@
 #include <thread>
 
 app::ServerMaster::ServerMaster(const uint16_t& listenerPortClient, const uint16_t& listenerPortRepository){
+  tool::ConsolePrint("- CENAPSE v1.0.1 -", VIOLET);
   tool::ConsolePrint("[SERVER MASTER <Init Client Listener>]:", CYAN);
   if(clientListener.listen(listenerPortClient) != net::Status::Done){
     tool::ConsolePrint("=================================== (--FAILURE--)", RED);
     exit(EXIT_FAILURE);
   }
+  else
+    tool::ConsolePrint("=================================== (--SUCCESS--)", GREEN);
   tool::ConsolePrint("[SERVER MASTER <Init Repo. Listener>]:", CYAN);
   if(repositoryListener.listen(listenerPortRepository) != net::Status::Done){
     tool::ConsolePrint("=================================== (--FAILURE--)", RED);
     exit(EXIT_FAILURE);
   }
-  tool::ConsolePrint("=================================== (--SUCCESS--)", GREEN);
+  else
+    tool::ConsolePrint("=================================== (--SUCCESS--)", GREEN);
   tool::ConsolePrint(">> Client Listener:", CYAN);
   std::cout << clientListener << std::endl;
   tool::ConsolePrint(">> Repository Listener:", CYAN);
@@ -36,7 +40,12 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket> so
       dbNodeId = tool::asStreamString(dbNodeId, 3);
       rdt::RDTSocket queryConnection;
       repositoryPoolMutex.lock();
-      std::pair<uint16_t, std::string> info = repositoryConnectionPool[dbNodeId[0] % repositoryConnectionPool.size()];
+      std::pair<uint16_t, std::string> info;
+      int64_t connectionKey = -1;
+      if(repositoryConnectionPool.size()){
+        connectionKey = dbNodeId[0] % repositoryConnectionPool.size();
+        info = repositoryConnectionPool[connectionKey];
+      }
       repositoryPoolMutex.unlock();
       if(queryConnection.connect(info.second, info.first) == net::Status::Done){
         if(queryConnection.online()){
@@ -44,18 +53,29 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket> so
           queryConnection.disconnectInitializer();
         }
       }
+      else{
+        repositoryPoolMutex.lock();
+        if(connectionKey != -1)
+          repositoryConnectionPool.erase(repositoryConnectionPool.begin() + connectionKey);
+        repositoryPoolMutex.unlock();
+      }
     }
     else if(commandKey == 'r'){
       msg::ReadNodePacket rPacket, tempPacket;
       rPacket << message;
       std::vector<std::string> givenNeighbours = {rPacket.nodeId};
       while(rPacket.depth > 0){
-        std::string neighbours;
+        std::string neighbours, singleResponse;
         std::stringstream buffer;
         for(std::string& id : givenNeighbours){
           rdt::RDTSocket queryConnection;
           repositoryPoolMutex.lock();
-          std::pair<uint16_t, std::string> info = repositoryConnectionPool[id[0] % repositoryConnectionPool.size()];
+          std::pair<uint16_t, std::string> info;
+          int64_t connectionKey = -1;
+          if(repositoryConnectionPool.size()){
+            connectionKey = dbNodeId[0] % repositoryConnectionPool.size();
+            info = repositoryConnectionPool[connectionKey];
+          }
           repositoryPoolMutex.unlock();
           if(queryConnection.connect(info.second, info.first) == net::Status::Done){
             if(queryConnection.online()){
@@ -64,11 +84,19 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket> so
               tempPacket >> message;
               queryConnection.send(message);
               queryConnection.receive(neighbours);
+              queryConnection.receive(singleResponse);
+              response += singleResponse + ",";
               buffer << neighbours;
               queryConnection.receive(message);
               rPacket << message;
               queryConnection.disconnectInitializer();
             }
+          }
+          else{
+            repositoryPoolMutex.lock();
+            if(connectionKey != -1)
+              repositoryConnectionPool.erase(repositoryConnectionPool.begin() + connectionKey);
+            repositoryPoolMutex.unlock();
           }
         }
         givenNeighbours.clear();
@@ -77,12 +105,20 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket> so
           givenNeighbours.push_back(singleNeighbour);
         }
       }
+      if(response.empty())
+        response = "empty";
+      else
+        response.pop_back();
       socket->send(response);
     }
     else if(commandKey == 'u'){
       dbNodeId = message.substr(2);
       dbNodeId = tool::asStreamString(dbNodeId, 2);
-      for(auto& repository : repositoryConnectionPool){
+      std::size_t position = 0;
+      repositoryPoolMutex.lock();
+      auto copyPool = repositoryConnectionPool;
+      repositoryPoolMutex.unlock();
+      for(auto& repository : copyPool){
         std::shared_ptr<rdt::RDTSocket> queryConnection = std::make_shared<rdt::RDTSocket>();
         if(queryConnection->connect(repository.second, repository.first) == net::Status::Done){
           std::thread queryThread([](std::shared_ptr<rdt::RDTSocket> conn, const std::string& query){
@@ -93,12 +129,22 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket> so
           }, queryConnection, message);
           queryThread.detach();
         }
+        else{
+          repositoryPoolMutex.lock();
+          repositoryConnectionPool.erase(repositoryConnectionPool.begin() + position);
+          repositoryPoolMutex.unlock();
+        }
+        ++position;
       }
     }
     else if(commandKey == 'd'){
       dbNodeId = message.substr(2);
       dbNodeId = tool::asStreamString(dbNodeId, 2);
-      for(auto& repository : repositoryConnectionPool){
+      std::size_t position = 0;
+      repositoryPoolMutex.lock();
+      auto copyPool = repositoryConnectionPool;
+      repositoryPoolMutex.unlock();
+      for(auto& repository : copyPool){
         std::shared_ptr<rdt::RDTSocket> queryConnection = std::make_shared<rdt::RDTSocket>();
         if(queryConnection->connect(repository.second, repository.first) == net::Status::Done){
           std::thread queryThread([](std::shared_ptr<rdt::RDTSocket> conn, const std::string& query){
@@ -109,6 +155,12 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket> so
           }, queryConnection, message);
           queryThread.detach();
         }
+        else{
+          repositoryPoolMutex.lock();
+          repositoryConnectionPool.erase(repositoryConnectionPool.begin() + position);
+          repositoryPoolMutex.unlock();
+        }
+        ++position;
       }
     }
     socket->passiveDisconnect();
