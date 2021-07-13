@@ -40,12 +40,14 @@ void app::RepositoryServer::connEnvironmentQuery(std::shared_ptr<rdt::RDTSocket>
       msg::ReadNodePacket qPacket;
       qPacket << query;
       response = "";
+      //READ devuelve un vector<pair<string,map<string,string>>
       for(auto& neighbour : database.Read(qPacket)){
-        response += neighbour + ",";
+        response += neighbour.first;
       }
       socket->send(response.substr(0, response.length() - 1));
       qPacket >> query;
       socket->send(query);
+      
     }
     else if(commandKey == 'u'){
       msg::UpdateNodePacket qPacket;
