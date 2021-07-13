@@ -4,11 +4,7 @@
 #include <iostream>
 
 #define DEFAULT_RTT_VALUE   200
-<<<<<<< HEAD
-#define MIN_RTT_VALUE       15
-=======
 #define TIMEOUT_LOWERBOUND  15
->>>>>>> main
 
 namespace rdt{
   
