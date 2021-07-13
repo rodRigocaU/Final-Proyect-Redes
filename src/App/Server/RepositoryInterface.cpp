@@ -1,5 +1,6 @@
 #include "App/Server/RepositoryInterface.hpp"
 #include "App/Tools/Colors.hpp"
+#include "Network/Algorithm/base64.hpp"
 #include <thread>
 #include <sstream>
 
@@ -34,13 +35,25 @@ void app::RepositoryServer::connEnvironmentQuery(std::shared_ptr<rdt::RDTSocket>
     if(commandKey == 'c'){
       msg::CreateNodePacket qPacket;
       qPacket << query;
+      for(auto& item : qPacket.attributes){
+        if(item.second[0] == '@'){
+          std::string decoded = crypto::decodeBase64(item.second.substr(1));
+          decoded.pop_back();
+          item.second = "@" + decoded;
+        }
+      }
+      databaseMutex.lock();
       database.Create(qPacket);
+      databaseMutex.unlock();
     }
     else if(commandKey == 'r'){
       std::string propagation = "", response = "";
       msg::ReadNodePacket qPacket;
       qPacket << query;
-      for(auto& read : database.Read(qPacket)){
+      databaseMutex.lock();
+      auto readCopy = database.Read(qPacket);
+      databaseMutex.unlock();
+      for(auto& read : readCopy){
         propagation += read.first + ",";
         if(!read.second.empty()){
           response += "<" + read.first + ">";
@@ -52,6 +65,8 @@ void app::RepositoryServer::connEnvironmentQuery(std::shared_ptr<rdt::RDTSocket>
         propagation.pop_back();
       if(!response.empty())
         response.pop_back();
+      else
+        response = "empty";
       socket->send(propagation);
       socket->send(response);
       qPacket >> query;
@@ -60,21 +75,34 @@ void app::RepositoryServer::connEnvironmentQuery(std::shared_ptr<rdt::RDTSocket>
     else if(commandKey == 'u'){
       msg::UpdateNodePacket qPacket;
       qPacket << query;
+      databaseMutex.lock();
       database.Update(qPacket);
+      databaseMutex.unlock();
     }
     else if(commandKey == 'd'){
       msg::DeleteNodePacket qPacket;
       qPacket << query;
+      databaseMutex.lock();
       database.Delete(qPacket);
+      databaseMutex.unlock();
     }
+    alternateConsolePrintMutex.lock();
+    tool::ConsolePrint("========================================", NO_COLOR);
+    tool::ConsolePrint("[REPOSITORY <Spam>]: SELECT * NODOS_____", GREEN);
+    database.printSelectNodos();
+    tool::ConsolePrint("[REPOSITORY <Spam>]: SELECT * ATTRIBUTES", VIOLET);
+    database.printSelectAttributes();
+    tool::ConsolePrint("[REPOSITORY <Spam>]: SELECT * RELATIONS_", CYAN);
+    database.printSelectRelations();
+    tool::ConsolePrint("========================================", NO_COLOR);
+    alternateConsolePrintMutex.unlock();
     socket->passiveDisconnect();
   }
 }
 
 void app::RepositoryServer::run(){
   while(true){
-    std::shared_ptr<rdt::RDTSocket> newQueryIntent;
-    newQueryIntent = std::make_shared<rdt::RDTSocket>();
+    std::shared_ptr<rdt::RDTSocket> newQueryIntent = std::make_shared<rdt::RDTSocket>();
     alternateConsolePrintMutex.lock();
     tool::ConsolePrint("[REPOSITORY <Spam>]: Waiting for a new Query.", CYAN);
     alternateConsolePrintMutex.unlock();

@@ -218,10 +218,10 @@ namespace db
         for (auto &item : attributes)
         {
             //Attribute as .png .jpg or .txt
-            if( tool::isMultimedia(item.first) ){
-                CreateMultimedia(item.first,item.second);
+            if( tool::isMultimedia(item.second) ){
+                CreateMultimedia(item.first,item.second.substr(1));
                 sql = "INSERT INTO Attribute (idAttribute,name_attribute,value_attribute) "
-                        "VALUES ( " + idNode + " , '" + item.first + "' , '" + item.first + "' );";
+                        "VALUES ( " + idNode + " , '" + item.first + "' , '" + "@" + item.first + "' );";
                 existDataBase();
                 rc = sqlite3_exec(DB, sql.c_str(), NULL, NULL, &MsgError);
                 closeDB();
@@ -256,8 +256,8 @@ namespace db
             std::ofstream image(nameFile, std::ios::out | std::ios::app);
             for(int i = 0; i < codeBinary.length(); i++)
                 image.put(codeBinary[i]);
-             
-            std::cout << "BINARY-TO-IMG-COMPLETED " << '\n';
+            if (printError)
+                std::cout << "BINARY-TO-IMG-COMPLETED " << '\n';
             image.clear();
             
     }

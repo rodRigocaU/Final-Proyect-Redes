@@ -24,7 +24,7 @@ namespace app{
     rdt::RDTListener unknownQueryListener;
     db::SQLite database;
 
-    std::mutex alternateConsolePrintMutex;
+    std::mutex alternateConsolePrintMutex, databaseMutex;
     void connEnvironmentQuery(std::shared_ptr<rdt::RDTSocket> socket);
   public:
     RepositoryServer(const std::string& serverMasterIp, const uint16_t& serverMasterPort, const std::string& databaseFile);

@@ -17,11 +17,11 @@ namespace msg{
     packet.updateMode = static_cast<UpdateNodePacket::Mode>(tool::asStreamNumeric(content, 1));
     packet.nodeId = tool::asStreamString(content, 2);
 
-    if (packet.updateMode == UpdateNodePacket::Mode::Object){
+    if (packet.updateMode == UpdateNodePacket::Mode::Attribute){
       packet.attrName = tool::asStreamString(content, 3);
       packet.attrValue = tool::asStreamString(content, ATTRIBUTE_LENGTH);
     }
-    else if (packet.updateMode == UpdateNodePacket::Mode::Attribute){
+    else if (packet.updateMode == UpdateNodePacket::Mode::Object){
       packet.newNodeValue = tool::asStreamString(content, 2);
     }
     return packet;
@@ -33,12 +33,16 @@ namespace msg{
     message += std::to_string(packet.updateMode);
     message += tool::fixToBytes(std::to_string(packet.nodeId.length()), 2);
     message += packet.nodeId;
-    message += tool::fixToBytes(std::to_string(packet.newNodeValue.length()), 2);
-    message += packet.newNodeValue;
-    message += tool::fixToBytes(std::to_string(packet.attrName.length()), 3);
-    message += packet.attrName;
-    message += tool::fixToBytes(std::to_string(packet.attrValue.length()), ATTRIBUTE_LENGTH);
-    message += packet.attrValue;
+    if(packet.updateMode == UpdateNodePacket::Mode::Attribute){
+      message += tool::fixToBytes(std::to_string(packet.attrName.length()), 3);
+      message += packet.attrName;
+      message += tool::fixToBytes(std::to_string(packet.attrValue.length()), ATTRIBUTE_LENGTH);
+      message += packet.attrValue;
+    }
+    else if (packet.updateMode == UpdateNodePacket::Mode::Object){
+      message += tool::fixToBytes(std::to_string(packet.newNodeValue.length()), 2);
+      message += packet.newNodeValue;
+    }
     return packet;
   }
 

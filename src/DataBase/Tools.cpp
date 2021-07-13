@@ -79,16 +79,8 @@ namespace tool
 
    
     bool isMultimedia(std::string nameAttribute){
-        if (nameAttribute.size() > 4)
-        {
-            std::string extension = nameAttribute.substr(nameAttribute.size()-4,4);
-            std::cout<<extension<<std::endl;
-            if  (extension ==".png")
-                return true;
-            else if (extension ==".jpg")
-                return true;
-            else if  (extension ==".txt")
-                return true;
+        if (nameAttribute.size()){
+            return nameAttribute[0] == '@';
         }
         return false;
     }

@@ -85,7 +85,8 @@ void app::ServerMaster::connEnvironmentClient(std::shared_ptr<rdt::RDTSocket> so
               queryConnection.send(message);
               queryConnection.receive(neighbours);
               queryConnection.receive(singleResponse);
-              response += singleResponse + ",";
+              if(singleResponse != "empty")
+                response += singleResponse + ",";
               buffer << neighbours;
               queryConnection.receive(message);
               rPacket << message;

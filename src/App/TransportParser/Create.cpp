@@ -74,9 +74,13 @@ namespace msg{
       packet.attributes.insert({key, value});
       buffer.clear();
     }
-    while(std::getline(relationGroup, singleRelation, ',')){
-      tool::cleanSpaces(singleRelation);
-      packet.relations.push_back(singleRelation);
+    std::string verification = relationGroup.str();
+    tool::cleanSpaces(verification);
+    if(verification != "!None"){
+      while(std::getline(relationGroup, singleRelation, ',')){
+        tool::cleanSpaces(singleRelation);
+        packet.relations.push_back(singleRelation);
+      }
     }
     return packet;
   }

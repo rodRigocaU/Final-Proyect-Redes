@@ -27,8 +27,10 @@ namespace msg{
     message += std::to_string(packet.deleteMode);
     message += tool::fixToBytes(std::to_string(packet.nodeId.length()), 2);
     message += packet.nodeId;
-    message += tool::fixToBytes(std::to_string(packet.targetName.length()), 3);
-    message += packet.targetName;
+    if (packet.deleteMode == DeleteNodePacket::Mode::Attribute || packet.deleteMode == DeleteNodePacket::Mode::Relation){
+      message += tool::fixToBytes(std::to_string(packet.targetName.length()), 3);
+      message += packet.targetName;
+    }
     return packet;
   }
 
