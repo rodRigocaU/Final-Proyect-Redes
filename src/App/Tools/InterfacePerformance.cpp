@@ -42,6 +42,8 @@ namespace tool{
           tokenGroup << line;
           std::getline(tokenGroup, key, DOT_CONF_TOKEN_SEPARATOR);
           std::getline(tokenGroup, value);
+          
+          
           if(value.length()){
             tool::cleanSpaces(key);
             

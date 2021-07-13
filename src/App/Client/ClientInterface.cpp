@@ -29,6 +29,21 @@ namespace app{
     std::string message;
     if(tool::readSettingsFile("spawn.conf", settings)){
       packet << settings;
+      for(auto& item : packet.attributes){
+        if (item.second[0] == '@'){
+          std::ifstream image(item.second.substr(1), std::ios::in | std::ios::binary);
+          std::string binaryfile = "";
+          char ch;
+          if(image.is_open()){
+            while (!image.eof()) {
+              ch = image.get();
+              binaryfile.push_back(ch);
+            }
+            image.close();
+            item.second = binaryfile.substr(0, binaryfile.length() - 1);
+          }
+        }
+      }
       packet >> message;
     }
     else

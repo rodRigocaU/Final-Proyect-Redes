@@ -21,7 +21,7 @@ namespace msg{
 
     while(nAttrs-- != 0){
       std::string name = tool::asStreamString(content, 3);
-      std::string value = tool::asStreamString(content, 3);
+      std::string value = tool::asStreamString(content, 5);
       packet.attributes[name] = value;
     }
     while(nRels-- != 0)
@@ -45,7 +45,7 @@ namespace msg{
       std::string attVsize = std::to_string(attr.second.length());
       message += tool::fixToBytes(attNsize, 3);
       message += attr.first;
-      message += tool::fixToBytes(attVsize, 3);
+      message += tool::fixToBytes(attVsize, 5);
       message += attr.second;
     }
     
