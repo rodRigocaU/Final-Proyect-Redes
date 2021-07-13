@@ -1,34 +1,19 @@
-#include <iostream>
-#include "App/App.hpp"
-#include "Network/RDTSocket.hpp"
+#include "App/Client/ClientInterface.hpp"
 
 int main(int argc, char *argv[]) {
-  /*
-  app::Client clientInstance("34.94.147.12", "8000");
-
-  if(argc > 1) {
-    if(!clientInstance.setCommand(argv[1])) {
-      tool::ConsolePrint("[Error]: Can not process this command", RED);
-      return EXIT_FAILURE;
-    }
-  }*/
-
-  rdt::RDTSocket socket;
-  if(socket.connect("34.94.147.12", 5001) != net::Status::Done){
+  std::map<std::string, std::string> requirements = {{"ServerMasterIp",""},{"ServerMasterClientPort",""}};
+  if(!tool::readSettingsFile("Cenapse.conf", requirements, true)) {
+    tool::ConsolePrint("[Error]: Requirements missed.", RED);
     return EXIT_FAILURE;
   }
-
-  std::cout << socket << std::endl;
-  while(true){
-    std::string msg;
-    std::cout << "Escribe un mensaje para tu servidor: ";
-    std::getline(std::cin, msg);
-    socket.send(msg);
+  app::Client clientInstance(requirements["ServerMasterIp"], requirements["ServerMasterClientPort"]);
+  
+  if(argc > 1) {
+    if(!clientInstance.setCommand(argv[1])) {
+      tool::ConsolePrint("[Error]: Can not process this command.", RED);
+      return EXIT_FAILURE;
+    }
   }
-  
-
-  
-  
-  socket.disconnectInitializer();// nos desconectamos
   return EXIT_SUCCESS;
 }
+

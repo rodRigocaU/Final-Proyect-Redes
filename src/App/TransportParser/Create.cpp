@@ -8,11 +8,9 @@ namespace msg{
     relations.clear();
   }
 
-  CreateNodePacket& operator<<(CreateNodePacket& packet, const std::string& message)
-  {
+  CreateNodePacket& operator<<(CreateNodePacket& packet, const std::string& message){
     packet.clear();
-    if(message.length() && message[0] != 'c')
-    {
+    if(message.length() && message[0] != 'c'){
       tool::ConsolePrint("[Error]: Incorrect key header.", RED);
       exit(EXIT_FAILURE);
     }
@@ -23,7 +21,7 @@ namespace msg{
 
     while(nAttrs-- != 0){
       std::string name = tool::asStreamString(content, 3);
-      std::string value = tool::asStreamString(content, 3);
+      std::string value = tool::asStreamString(content, 5);
       packet.attributes[name] = value;
     }
     while(nRels-- != 0)
@@ -31,8 +29,7 @@ namespace msg{
     return packet;
   }
 
-  CreateNodePacket& operator>>(CreateNodePacket& packet, std::string& message)
-  {
+  CreateNodePacket& operator>>(CreateNodePacket& packet, std::string& message){
     message.clear();
     message += "c";
     std::string nameSize = std::to_string(packet.nodeId.length()), nAttrs, nRels;
@@ -43,18 +40,16 @@ namespace msg{
     message += tool::fixToBytes(nAttrs, 2);
     message += tool::fixToBytes(nRels, 3);
 
-    for(auto& attr : packet.attributes)
-    {
+    for(auto& attr : packet.attributes){
       std::string attNsize = std::to_string(attr.first.length());
       std::string attVsize = std::to_string(attr.second.length());
       message += tool::fixToBytes(attNsize, 3);
       message += attr.first;
-      message += tool::fixToBytes(attVsize, 3);
+      message += tool::fixToBytes(attVsize, 5);
       message += attr.second;
     }
     
-    for(auto& rel : packet.relations)
-    {
+    for(auto& rel : packet.relations){
       std::string relNsize = std::to_string(rel.length());
       message += tool::fixToBytes(relNsize, 3);
       message += rel;

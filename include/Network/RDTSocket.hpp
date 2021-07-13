@@ -81,10 +81,26 @@ namespace rdt {
   public:
     RDTSocket();
     ~RDTSocket();
+    ///\brief Initialize a connection with an active Listener.
+    ///\param remoteIp The listener (a.k.a. server) Ip address.
+    ///\param remotePort The listener (a.k.a. server) port where it is bound.
+    ///\return Socket Status -> Done if everything was ok.
     net::Status connect(const std::string& remoteIp, const uint16_t& remotePort);
+    ///\brief Sends a message with reliable data transfer encoding to the connected socket mirror.
+    ///\param message Literal or Valued variable string to send.
+    ///\return Socket Status -> Done if everything was ok.
     net::Status send(const std::string& message);
+    ///\brief Receives a message with reliable data transfer encoding from the connected socket mirror.
+    ///\param message Referenced variable string to receive.
+    ///\return Socket Status -> Done if everything was ok.
     net::Status receive(std::string& message);
+    ///Checks if the socket is connected or not
+    ///\return True, if the socket is online.
+    ///\return False, if the socket was disconnected.
+    bool online();
+    ///Initialize disconnection to the receptor
     void disconnectInitializer();
+    ///Wait for an incomming disconnection
     void passiveDisconnect();
 
     const std::string& getRemoteIpAddress() const;

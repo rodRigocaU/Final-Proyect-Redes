@@ -38,6 +38,10 @@ const uint16_t& rdt::RDTListener::getLocalPort() const{
   return listenSocket.getLocalPort();
 }
 
+const std::string& rdt::RDTListener::getLocalIp() const{
+  return listenSocket.mainSocket->getLocalIp();
+}
+
 std::ostream& operator<<(std::ostream& out, const rdt::RDTListener& listener){
   out << "+----------------------+\n";
   out << "|RDT::Listener(PASSIVE)|\n";

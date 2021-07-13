@@ -29,10 +29,11 @@ namespace msg{
     };
 
     std::string nodeId;
-    uint8_t depth;
+    uint16_t depth;
     Class nodeType;
     QueryMode attribsReq;
     std::vector<Feature> features;
+    //std::string neighbor std::string path 
 
     ReadNodePacket();
 

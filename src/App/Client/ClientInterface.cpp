@@ -1,7 +1,4 @@
 #include "App/Client/ClientInterface.hpp"
-#include "App/Tools/Colors.hpp"
-#include "App/Tools/Fixer.hpp"
-#include "App/Tools/InterfacePerformance.hpp"
 #include "App/TransportParser/Client0MainServerParser.hpp"
 
 namespace app{
@@ -11,11 +8,8 @@ namespace app{
     commands["ask"]    = std::bind(&Client::read, this);
     commands["update"] = std::bind(&Client::update, this);
     commands["drop"]   = std::bind(&Client::drop, this);
-
-    if(clientSocket.connect(serverIp, std::stoi(serverPort)) != net::Status::Done){
-      tool::ConsolePrint("=> Unexpected error, can not connect with server master.\n", RED);
-      exit(EXIT_FAILURE);
-    }
+    serverMasterIp = serverIp;
+    serverMasterPort = std::stoi(serverPort);
   }
 
   bool Client::setCommand(const std::string& command) {
@@ -35,9 +29,31 @@ namespace app{
     std::string message;
     if(tool::readSettingsFile("spawn.conf", settings)){
       packet << settings;
+      for(auto& item : packet.attributes){
+        if (item.second[0] == '@'){
+          std::ifstream image(item.second.substr(1), std::ios::in | std::ios::binary);
+          std::string binaryfile = "";
+          char ch;
+          if(image.is_open()){
+            while (!image.eof()) {
+              ch = image.get();
+              binaryfile.push_back(ch);
+            }
+            image.close();
+            item.second = binaryfile.substr(0, binaryfile.length() - 1);
+          }
+        }
+      }
       packet >> message;
     }
+    else
+      return false;
+    if(clientSocket.connect(serverMasterIp, serverMasterPort) != net::Status::Done){
+      tool::ConsolePrint("=> Unexpected error, can not connect with server master.\n", RED);
+      exit(EXIT_FAILURE);
+    }
     clientSocket.send(message);
+    clientSocket.disconnectInitializer();
     return true;
   }
 
@@ -55,7 +71,14 @@ namespace app{
       packet << settings;
       packet >> message;
     }
+    else
+      return false;
+    if(clientSocket.connect(serverMasterIp, serverMasterPort) != net::Status::Done){
+      tool::ConsolePrint("=> Unexpected error, can not connect with server master.\n", RED);
+      exit(EXIT_FAILURE);
+    }
     clientSocket.send(message);
+    clientSocket.disconnectInitializer();
     return true;
   }
 
@@ -72,7 +95,14 @@ namespace app{
       packet << settings;
       packet >> message;
     }
+    else
+      return false;
+    if(clientSocket.connect(serverMasterIp, serverMasterPort) != net::Status::Done){
+      tool::ConsolePrint("=> Unexpected error, can not connect with server master.\n", RED);
+      exit(EXIT_FAILURE);
+    }
     clientSocket.send(message);
+    clientSocket.disconnectInitializer();
     return true;
   }
 
@@ -88,7 +118,14 @@ namespace app{
       packet << settings;
       packet >> message;
     }
+    else
+      return false;
+    if(clientSocket.connect(serverMasterIp, serverMasterPort) != net::Status::Done){
+      tool::ConsolePrint("=> Unexpected error, can not connect with server master.\n", RED);
+      exit(EXIT_FAILURE);
+    }
     clientSocket.send(message);
+    clientSocket.disconnectInitializer();
     return true;
   }
 

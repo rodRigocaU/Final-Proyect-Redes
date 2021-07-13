@@ -2,65 +2,69 @@
 #define SQLITE_HPP_
 
 #include <iostream>
-#include <sqlite3.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <vector>
 #include <utility>
 #include <set>
+#include <map>
+#include "Tools.hpp" //// #include <sqlite3.h>
+#include "App/TransportParser/Read.hpp"
+#include "App/TransportParser/Create.hpp"
+#include "App/TransportParser/Delete.hpp"
+#include "App/TransportParser/Update.hpp"
 
 namespace db
 {
-    
+
     class SQLite
     {
     private:
         std::string nameDatabase;
-        // descriptor database
-        sqlite3 *DB;
-        int exit;
-
-        char *MsgError = 0;
-        int rc;
-
-        bool printRecord = true;
-
+        sqlite3 *DB; // descriptor database
+        bool printError = false;
+        char *MsgError;
+        int rc; //Status Query
         std::string sql;
 
     public:
-        bool printError = false;
-
-        SQLite(const std::string &nameDatabase = "GraphNetwork.db");
-
-        //CRUD
-        //C
-        void Create(std::string name_node, std::vector<std::pair<std::string, std::string>> attributes, std::vector<std::string> nodes_relations);
-        //R (Falta)
-        std::vector<std::string> Read(std::vector<std::string> path, std::string query_node, std::string deep, std::string leaf, std::string attributes, std::vector<std::tuple<std::string, std::string, std::string, std::string>> condition);
-
-        // U
-        void UpdateValueNodo(std::string query_value_node, std::string set_value_node);
-        void UpdateAttribute(std::string query_value_node, std::pair<std::string, std::string> set_attribute);
-        void UpdateAttributes(std::string query_value_node, std::vector<std::pair<std::string, std::string>> set_attributes);
-        //D
-        void DropNode(std::string query_value_node);
-        void DropValueAttributeOrRelation(std::string query_value_node, std::string query_value_attribute_o_R_size, std::string node_or_attribute);
-
+        void setFile(const std::string& file);
         void createTables();
-        void insertNodo(std::string name_node);
-        void insertAttributes(std::string name_node, std::vector<std::pair<std::string, std::string>> attributes);
-        void createRelation(std::string name_node_start, std::string name_node_end);
-        void createRelations(std::string name_node_start, std::vector<std::string> nodes_relations);
 
         void existDataBase();
-        bool exsitNodo(std::string name_node);
+        bool existNodo(std::string name_node, std::string &id_Node);
         void closeDB();
+        void cleanDB(bool wantNode = true, bool wantAttributes = true, bool wantRelations = true);
+        //foreign_keys -> Constraint Support
+        void ConstraintForeign();
+        void writeComandSQL();
 
-        // Print Select
         void printSelectNodos();
         void printSelectRelations();
         void printSelectAttributes();
+
+        //CRUD
+        //C
+        void Create(msg::CreateNodePacket &packetCreate);
+        void CreateNodo(std::string &name_node, std::string &idNode);
+        void CreateAttributes(std::string &idNode, std::map<std::string, std::string> &attributes);
+        void CreateRelation(std::string &id_node_start, std::string &id_node_end);
+        void CreateRelations(std::string &idNode, std::vector<std::string> &nodes_relations);
+
+        //R (Falta)
+        std::vector<std::string> Read(msg::ReadNodePacket packetRead);
+
+        // U
+        void Update(msg::UpdateNodePacket &packetUpdate);
+        void UpdateValueNodo(std::string &query_value_node, std::string &set_value_node);
+        void UpdateAttribute(std::string &query_value_node, std::string &name_attribute, std::string &value_attribute);
+
+        //D
+        void Delete(msg::DeleteNodePacket &packetDelete);
+        void DeleteNode(std::string &value_node);
+        void DeleteValueAttribute(std::string &value_node, std::string &name_attribute);
+        void DeleteRelation(std::string &value_node, std::string &value_node_Relation);
     };
 
 }
